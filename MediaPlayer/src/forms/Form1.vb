@@ -32,7 +32,7 @@ Public Class Form1
 #End Region
 
 #Region "Variables"
-    Public dll As New Class1
+    Public dll As New Utils
     Dim rnd As New Random
     Public inipath As String
     Public logpath As String
@@ -837,7 +837,7 @@ Public Class Form1
                     keydelay(cursorMoverDelay)
                 End If
             Case Key.keyName.Restore_Window
-                Class1.SwitchTo(Process.GetCurrentProcess.MainWindowHandle)
+                Utils.SwitchTo(Process.GetCurrentProcess.MainWindowHandle)
         End Select
     End Sub
 
@@ -1853,7 +1853,7 @@ Public Class Form1
         Private col As Integer = 0
         Private order As SortOrder
         Private list As ListView
-        Private Shared dll As New Class1
+        Private Shared dll As New Utils
 
         Public Sub New(ByVal col As Integer, ByVal list As ListView)
             MyClass.col = col
@@ -3800,17 +3800,17 @@ Public Class Form1
                         ElseIf comm.StartsWith("block") Then
                             If comm.Length > 5 Then
                                 If comm.Substring(6) = "off" Then
-                                    Class1.BlockInput(False)
+                                    Utils.BlockInput(False)
                                 Else
-                                    Class1.BlockInput(True)
+                                    Utils.BlockInput(True)
                                     Dim tim As Integer = comm.Substring(6)
                                     For i = 0 To Int(tim / 1000)
                                         Threading.Thread.Sleep(IIf(i < Int(tim / 1000), 1000, tim Mod 1000))
                                     Next
-                                    Class1.BlockInput(False)
+                                    Utils.BlockInput(False)
                                 End If
                             Else
-                                Class1.BlockInput(True)
+                                Utils.BlockInput(True)
                             End If
                         ElseIf comm.StartsWith("req") Then
                             If comm.StartsWith("reql2") Then

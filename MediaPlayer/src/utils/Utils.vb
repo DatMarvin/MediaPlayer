@@ -8,7 +8,7 @@ Imports System.IO.Compression
 Imports CoreAudioApi 'reference
 Imports System.Runtime.InteropServices
 
-Public Class Class1
+Public Class Utils
 
     Public Declare Function getForegroundWindow Lib "user32" Alias "GetForegroundWindow" () As IntPtr
 

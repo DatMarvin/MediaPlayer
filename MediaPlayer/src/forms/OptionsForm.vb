@@ -5,7 +5,7 @@ Imports System.IO
 Public Class OptionsForm
 
 
-    Public Shared ReadOnly Property dll As Class1
+    Public Shared ReadOnly Property dll As Utils
         Get
             Return Form1.dll
         End Get
@@ -32,7 +32,7 @@ Public Class OptionsForm
             Return Form1.inipath
         End Get
     End Property
-    ReadOnly Property ftpCred As Class1.credentials
+    ReadOnly Property ftpCred As Utils.credentials
         Get
             Return dll.ftpCred
         End Get

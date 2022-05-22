@@ -10,7 +10,7 @@ Public Class StatsForm
         End Set
     End Property
 
-    ReadOnly Property dll() As Class1
+    ReadOnly Property dll() As Utils
         Get
             Return Form1.dll
         End Get
@@ -375,7 +375,7 @@ Public Class StatsForm
         Private col As Integer = 0
         Private order As SortOrder
         Private statsMode As Form1.eOverlayMode
-        Private Shared dll As New Class1
+        Private Shared dll As New Utils
 
         Public Sub New(ByVal col As Integer, ByVal list As ListView, ByVal mode As Form1.eOverlayMode)
             MyClass.col = col

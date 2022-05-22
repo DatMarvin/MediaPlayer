@@ -1,6 +1,6 @@
 ﻿Public Class Track
 
-    Shared ReadOnly Property dll As Class1
+    Shared ReadOnly Property dll As Utils
         Get
             Return formhandle.dll
         End Get

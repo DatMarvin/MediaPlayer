@@ -2,7 +2,7 @@
 Public Class TrackPart
 
 
-    Public ReadOnly Property dll As Class1
+    Public ReadOnly Property dll As Utils
         Get
             Return formHandle.dll
         End Get

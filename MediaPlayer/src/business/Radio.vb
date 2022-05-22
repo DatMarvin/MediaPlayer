@@ -1,6 +1,6 @@
 ﻿Public Class Radio
 
-    Public Shared dll As New Class1
+    Public Shared dll As New Utils
     Public url As String
     Public name As String
     Public time As Integer

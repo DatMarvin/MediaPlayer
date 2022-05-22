@@ -123,29 +123,29 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncTask.vb" />
-    <Compile Include="Class1.vb" />
-    <Compile Include="Folder.vb" />
-    <Compile Include="Form1.vb">
+    <Compile Include="src\utils\AsyncTask.vb" />
+    <Compile Include="src\utils\Utils.vb" />
+    <Compile Include="src\business\Folder.vb" />
+    <Compile Include="src\forms\Form1.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.vb">
+    <Compile Include="src\forms\Form1.Designer.vb">
       <DependentUpon>Form1.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="GadgetsForm.designer.vb">
+    <Compile Include="src\forms\GadgetsForm.designer.vb">
       <DependentUpon>GadgetsForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="GadgetsForm.vb">
+    <Compile Include="src\forms\GadgetsForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Genre.vb" />
-    <Compile Include="Key.vb" />
-    <Compile Include="Keylogger.vb" />
-    <Compile Include="LyricsForm.designer.vb">
+    <Compile Include="src\business\Genre.vb" />
+    <Compile Include="src\business\Key.vb" />
+    <Compile Include="src\business\Keylogger.vb" />
+    <Compile Include="src\forms\LyricsForm.designer.vb">
       <DependentUpon>LyricsForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="LyricsForm.vb">
+    <Compile Include="src\forms\LyricsForm.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="My Project\AssemblyInfo.vb" />
@@ -163,56 +163,56 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="NodeSelectionForm.designer.vb">
+    <Compile Include="src\forms\NodeSelectionForm.designer.vb">
       <DependentUpon>NodeSelectionForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="NodeSelectionForm.vb">
+    <Compile Include="src\forms\NodeSelectionForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="OptionsForm.designer.vb">
+    <Compile Include="src\forms\OptionsForm.designer.vb">
       <DependentUpon>OptionsForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="OptionsForm.vb">
+    <Compile Include="src\forms\OptionsForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="PartsForm.designer.vb">
+    <Compile Include="src\forms\PartsForm.designer.vb">
       <DependentUpon>PartsForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="PartsForm.vb">
+    <Compile Include="src\forms\PartsForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ProgressDialog.designer.vb">
+    <Compile Include="src\forms\ProgressDialog.designer.vb">
       <DependentUpon>ProgressDialog.vb</DependentUpon>
     </Compile>
-    <Compile Include="ProgressDialog.vb">
+    <Compile Include="src\forms\ProgressDialog.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Radio.vb" />
-    <Compile Include="StatsForm.designer.vb">
+    <Compile Include="src\business\Radio.vb" />
+    <Compile Include="src\forms\StatsForm.designer.vb">
       <DependentUpon>StatsForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="StatsForm.vb">
+    <Compile Include="src\forms\StatsForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="SysVol.vb" />
-    <Compile Include="Tcp.vb" />
-    <Compile Include="Track.vb" />
-    <Compile Include="TrackPart.vb" />
-    <Compile Include="TrackSelectionForm.designer.vb">
+    <Compile Include="src\utils\SysVol.vb" />
+    <Compile Include="src\network\Tcp.vb" />
+    <Compile Include="src\business\Track.vb" />
+    <Compile Include="src\business\TrackPart.vb" />
+    <Compile Include="src\forms\TrackSelectionForm.designer.vb">
       <DependentUpon>TrackSelectionForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="TrackSelectionForm.vb">
+    <Compile Include="src\forms\TrackSelectionForm.vb">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Form1.resx">
+    <EmbeddedResource Include="src\forms\Form1.resx">
       <DependentUpon>Form1.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="GadgetsForm.resx">
+    <EmbeddedResource Include="src\forms\GadgetsForm.resx">
       <DependentUpon>GadgetsForm.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="LyricsForm.resx">
+    <EmbeddedResource Include="src\forms\LyricsForm.resx">
       <DependentUpon>LyricsForm.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
@@ -221,22 +221,22 @@
       <CustomToolNamespace>My.Resources</CustomToolNamespace>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="NodeSelectionForm.resx">
+    <EmbeddedResource Include="src\forms\NodeSelectionForm.resx">
       <DependentUpon>NodeSelectionForm.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="OptionsForm.resx">
+    <EmbeddedResource Include="src\forms\OptionsForm.resx">
       <DependentUpon>OptionsForm.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="PartsForm.resx">
+    <EmbeddedResource Include="src\forms\PartsForm.resx">
       <DependentUpon>PartsForm.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ProgressDialog.resx">
+    <EmbeddedResource Include="src\forms\ProgressDialog.resx">
       <DependentUpon>ProgressDialog.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="StatsForm.resx">
+    <EmbeddedResource Include="src\forms\StatsForm.resx">
       <DependentUpon>StatsForm.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="TrackSelectionForm.resx">
+    <EmbeddedResource Include="src\forms\TrackSelectionForm.resx">
       <DependentUpon>TrackSelectionForm.vb</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>

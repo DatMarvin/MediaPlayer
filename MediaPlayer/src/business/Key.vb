@@ -2,7 +2,7 @@
 
     Public Declare Function GetAsyncKeyState Lib "user32" (ByVal nVirtKey As Integer) As Short
 
-    Public Shared ReadOnly Property dll As Class1
+    Public Shared ReadOnly Property dll As Utils
         Get
             Return Form1.dll
         End Get

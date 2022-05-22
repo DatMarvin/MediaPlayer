@@ -16,7 +16,7 @@ Module AsyncTask
     Public progressDialogHandle As ProgressDialog
     Dim formHandle As Form
     Public progressIndicator As Progress(Of Integer)
-    Dim dll As New Class1
+    Dim dll As New Utils
 
     Public Async Function getFolderStatsList(folders As List(Of Folder), dateLogStart As Date) As Tasks.Task(Of List(Of Integer()))
         Dim subsList As New List(Of Integer())

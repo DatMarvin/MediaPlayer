@@ -19,7 +19,7 @@ Public Class Folder
             Return Form1.inipath
         End Get
     End Property
-    Shared ReadOnly Property dll As Class1
+    Shared ReadOnly Property dll As Utils
         Get
             Return Form1.dll
         End Get

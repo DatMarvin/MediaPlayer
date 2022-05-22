@@ -2,7 +2,7 @@
 
     Shared formHandle As Form1
 
-    Public Shared ReadOnly Property dll() As Class1
+    Public Shared ReadOnly Property dll() As Utils
         Get
             Return formHandle.dll
         End Get

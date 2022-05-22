@@ -11,7 +11,7 @@ Public Class PartsForm
         End Set
     End Property
 
-    ReadOnly Property dll() As Class1
+    ReadOnly Property dll() As Utils
         Get
             Return Form1.dll
         End Get

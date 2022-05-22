@@ -2,7 +2,7 @@
 Imports System.IO
 Public Class TrackSelectionForm
 
-    Shared dll As New Class1
+    Shared dll As New Utils
 
     Public selTracks As List(Of Track)
     Public multiSelect As Boolean
