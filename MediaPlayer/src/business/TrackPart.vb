@@ -113,7 +113,7 @@ Public Class TrackPart
         Dim display As String = name
         If display = "" Then display = "Unknown Title"
         Dim treeChar As Char = "|"
-        Dim padSpaces As String = "  " & IIf(Form1.searchState > Form1.eSearchState.NONE, "  ", "")
+        Dim padSpaces As String = "  " & IIf(Form1.searchState > PlayerEnums.SearchState.NONE, "  ", "")
         Return padSpaces & treeChar & " " & format & " → " & display
     End Function
 End Class

@@ -1,4 +1,5 @@
-﻿Public Class Radio
+﻿Imports MediaPlayer.SettingsEnums
+Public Class Radio
 
     Public Shared dll As New Utils
     Public url As String
@@ -12,7 +13,7 @@
 
     End Sub
     Sub update()
-        time = dll.iniReadValue("RadioTime", name, 0, Form1.inipath)
+        time = loadRawSetting(SettingsIdentifier.RADIO_TIME, name)
     End Sub
     Overrides Function ToString() As String
         Return name
@@ -20,8 +21,8 @@
 
     Public Shared Function getStations() As List(Of Radio)
         Dim rads As New List(Of Radio)
-        Dim names() As String = dll.iniGetAllKeys("Radio", Form1.inipath)
-        Dim urls() As String = dll.iniGetAllValues("Radio", Form1.inipath)
+        Dim names() As String = dll.iniGetAllKeys(IniSection.RADIO, inipath)
+        Dim urls() As String = dll.iniGetAllValues(IniSection.RADIO, inipath)
         If names IsNot Nothing And urls IsNot Nothing Then
             For i = 0 To names.Length - 1
                 rads.Add(New Radio(names(i), urls(i)))

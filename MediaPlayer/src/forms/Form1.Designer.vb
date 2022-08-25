@@ -120,6 +120,7 @@ Partial Class Form1
         Me.picCancel = New System.Windows.Forms.PictureBox()
         Me.keyloggerTimer = New System.Windows.Forms.Timer(Me.components)
         Me.wmp = New AxWMPLib.AxWindowsMediaPlayer()
+        Me.iconTray = New System.Windows.Forms.NotifyIcon(Me.components)
         Me.con1.SuspendLayout()
         Me.con2.SuspendLayout()
         Me.menuStrip.SuspendLayout()
@@ -857,6 +858,12 @@ Partial Class Form1
         Me.wmp.TabIndex = 0
         Me.wmp.TabStop = False
         '
+        'iconTray
+        '
+        Me.iconTray.Icon = CType(resources.GetObject("iconTray.Icon"), System.Drawing.Icon)
+        Me.iconTray.Text = "Media Player"
+        Me.iconTray.Visible = True
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -1031,4 +1038,5 @@ Partial Class Form1
     Friend WithEvents keyloggerTimer As Timer
     Friend WithEvents RemoveFromPlaylistToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents con2TracksTasksRemove As ToolStripMenuItem
+    Friend WithEvents iconTray As NotifyIcon
 End Class

@@ -188,7 +188,7 @@
                             New Key(41, Keys.SelectMedia),'macro5
                             New Key(42, Keys.F11, modifier.AltGr)}) 'macro6
         For k = 0 To keyList.Count - 1
-            Dim commString As String = dll.iniReadValue("Hotkeys", keyList(k).ToString(), "", Form1.inipath)
+            Dim commString As String = loadRawSetting(SettingsIdentifier.HOTKEY_MAPPING, keyList(k).ToString())
             If commString <> "" Then
                 If isValidCombination(commString) Then
                     Dim keyCombis As List(Of KeyCombi) = getKeyCombisFromString(commString)
@@ -202,7 +202,6 @@
         Next
 
     End Sub
-
     Public Shared Function isValidCombination(ByVal s As String) As Boolean
         s = s.Replace(" ", "")
         Dim combis() As String = s.Split(";")

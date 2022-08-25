@@ -52,6 +52,9 @@
   <PropertyGroup>
     <ApplicationIcon>mediaPlayer.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="CoreAudioApi">
       <HintPath>..\..\..\..\Visual Studio 2010\Projects\mp3player\mp3player\bin\Release\CoreAudioApi.dll</HintPath>
@@ -123,6 +126,18 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApplicationEvents.vb" />
+    <Compile Include="src\business\enums\PlayerEnums.vb" />
+    <Compile Include="src\business\enums\SettingsEnums.vb" />
+    <Compile Include="src\forms\AutoStarts.vb" />
+    <Compile Include="src\service\settings\IImmutableSetting.vb" />
+    <Compile Include="src\service\settings\ISetting.vb" />
+    <Compile Include="src\service\settings\IniSetting.vb" />
+    <Compile Include="src\service\settings\RegistrySetting.vb" />
+    <Compile Include="src\service\versionupdate\VersionUpdateService.vb" />
+    <Compile Include="src\service\settings\SettingsIdentifier.vb" />
+    <Compile Include="src\service\settings\SettingsService.vb" />
+    <Compile Include="src\service\gadgets\ClickGadget.vb" />
     <Compile Include="src\utils\AsyncTask.vb" />
     <Compile Include="src\utils\Utils.vb" />
     <Compile Include="src\business\Folder.vb" />
@@ -141,7 +156,7 @@
     </Compile>
     <Compile Include="src\business\Genre.vb" />
     <Compile Include="src\business\Key.vb" />
-    <Compile Include="src\business\Keylogger.vb" />
+    <Compile Include="src\service\Keylogger.vb" />
     <Compile Include="src\forms\LyricsForm.designer.vb">
       <DependentUpon>LyricsForm.vb</DependentUpon>
     </Compile>
@@ -241,6 +256,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="My Project\app.manifest" />
     <None Include="My Project\Application.myapp">
       <Generator>MyApplicationCodeGenerator</Generator>
       <LastGenOutput>Application.Designer.vb</LastGenOutput>

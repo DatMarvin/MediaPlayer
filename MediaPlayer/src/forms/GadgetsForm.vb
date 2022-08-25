@@ -1,13 +1,8 @@
 ﻿'06.05.2020
 
-
+Imports MediaPlayer.SettingsEnums
 Public Class GadgetsForm
 
-    ReadOnly Property inipath As String
-        Get
-            Return Form1.inipath
-        End Get
-    End Property
 
     Public Shared ReadOnly Property dll As Utils
         Get
@@ -66,7 +61,7 @@ Public Class GadgetsForm
 
         Select Case state
             Case GadgetState.CLICK_COUNTER
-                checkCc.Checked = Form1.clickCounter
+                checkCc.Checked = clickCounter
                 fillClickCounterHistory()
                 If clickCounterHistoryList.Items.Count > 0 Then
                     clickCounterHistoryList.SelectedIndex = 0
@@ -74,23 +69,23 @@ Public Class GadgetsForm
                 clickCounterCumultative()
                 averageUnitCombo.SelectedIndex = 2
             Case GadgetState.CURSOR_MOVER
-                checkCursorMover.Checked = Form1.cursorMover
-                numIncr.Value = Form1.cursorMoverIncr
-                numDelay.Value = Form1.cursorMoverDelay
+                checkCursorMover.Checked = cursorMover
+                numIncr.Value = cursorMoverIncr
+                numDelay.Value = cursorMoverDelay
             Case GadgetState.AUTO_CLICKER
-                checkAutoClicker.Checked = Form1.autoClicker
-                numFreq.Value = Form1.autoClickerFreq
-                numRep.Value = Form1.autoClickerRep
+                checkAutoClicker.Checked = autoClicker
+                numFreq.Value = autoClickerFreq
+                numRep.Value = autoClickerRep
             Case GadgetState.MACROS
-                checkMacros.Checked = Form1.macrosEnabled
+                checkMacros.Checked = macrosEnabled
                 fillMacrosList()
             Case GadgetState.AUTOSTARTS
-                checkAutostart.Checked = Form1.autostarts
+                checkAutostart.Checked = SettingsService.autostarts
                 fillAutostartList()
                 If autostartList.Items.Count > 0 Then autostartList.SelectedIndex = 0
             Case GadgetState.KEYLOGGER
-                checkKeylogger.Checked = Form1.keylogger
-                KeyloggerModule.updateKeyLoggerOutputPath(Form1.dll.iniReadValue("Config", "keyloggerPath", "", Form1.inipath), False)
+                checkKeylogger.Checked = keylogger
+                KeyloggerModule.updateKeyLoggerOutputPath(SettingsService.getSetting(SettingsIdentifier.KEYLOGGER_PATH), False)
                 textKeyloggerPath.Text = KeyloggerModule.keyloggerOutputPath
                 checkKeyloggerAllowHotkeys.Checked = KeyloggerModule.allowHotkeys
                 checkKeyloggerRecordWindow.Checked = KeyloggerModule.recordWindow
@@ -146,30 +141,26 @@ Public Class GadgetsForm
     Function saveChanges() As Boolean
         Select Case state
             Case GadgetState.CURSOR_MOVER
-                Form1.cursorMoverIncr = numIncr.Value
-                dll.iniWriteValue("Config", "cursorMoverIncr", numIncr.Value, inipath)
-                Form1.cursorMoverDelay = numDelay.Value
-                dll.iniWriteValue("Config", "cursorMoverDelay", numDelay.Value, inipath)
+                saveSetting(SettingsIdentifier.CURSOR_MOVER_INCR, numIncr.Value)
+                saveSetting(SettingsIdentifier.CURSOR_MOVER_DELAY, numDelay.Value)
             Case GadgetState.AUTO_CLICKER
-                Form1.autoClickerFreq = numFreq.Value
+                saveSetting(SettingsIdentifier.AUTO_CLICKER_FREQ, numFreq.Value)
                 Form1.clickerTimer.Interval = numFreq.Value
-                dll.iniWriteValue("Config", "autoClickerFreq", numFreq.Value, inipath)
-                Form1.autoClickerRep = numRep.Value
-                dll.iniWriteValue("Config", "autoClickerRep", numRep.Value, inipath)
+                saveSetting(SettingsIdentifier.AUTO_CLICKER_REP, numRep.Value)
             Case GadgetState.MACROS
                 saveMacros(False)
             Case GadgetState.AUTOSTARTS
                 saveAutoStart(False)
             Case GadgetState.KEYLOGGER
                 KeyloggerModule.updateKeyLoggerOutputPath(textKeyloggerPath.Text)
-                dll.iniWriteValue("Config", "keyloggerPath", textKeyloggerPath.Text, inipath)
+                SettingsService.saveSetting(SettingsIdentifier.KEYLOGGER_PATH, textKeyloggerPath.Text)
         End Select
         Return True
     End Function
 
     Sub colorForm() '06.08.19
         If inipath = "" Then Return
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", 0, inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
 
@@ -216,8 +207,8 @@ Public Class GadgetsForm
         Dim clickSecs As New List(Of String)
         If allSecs IsNot Nothing Then
             For Each sec In allSecs
-                If sec.ToLower.StartsWith("clicks") Then
-                    If sec.ToLower = "clicks" Then
+                If sec.ToLower.StartsWith(SettingsEnums.IniSection.CLICKS.ToLower()) Then
+                    If sec.ToLower = SettingsEnums.IniSection.CLICKS.ToLower() Then
                         clickSecs.Add(Now.ToShortDateString())
                     Else
                         clickSecs.Add(sec.Substring(6))
@@ -245,15 +236,15 @@ Public Class GadgetsForm
     Private Sub clickCounterHistoryList_SelectedIndexChanged(sender As Object, e As EventArgs) Handles clickCounterHistoryList.SelectedIndexChanged
         If clickCounterHistoryList.SelectedIndex > -1 Then
             Dim timestamp As String = clickCounterHistoryList.SelectedItem
-            labelLeftCLick.Text = "Left: " & getClickCounterValue(timestamp, "Left").ToString("n0")
-            labelRightClick.Text = "Right: " & getClickCounterValue(timestamp, "Right").ToString("n0")
-            labelMiddleClick.Text = "Middle: " & getClickCounterValue(timestamp, "Middle").ToString("n0")
-            labelTotalClick.Text = "Total: " & getClickCounterValue(timestamp, "Total").ToString("n0")
+            labelLeftCLick.Text = "Left: " & getClickCounterValue(timestamp, CLICKS_BUTTON_LEFT).ToString("n0")
+            labelRightClick.Text = "Right: " & getClickCounterValue(timestamp, CLICKS_BUTTON_RIGHT).ToString("n0")
+            labelMiddleClick.Text = "Middle: " & getClickCounterValue(timestamp, CLICKS_BUTTON_MIDDLE).ToString("n0")
+            labelTotalClick.Text = "Total: " & getClickCounterValue(timestamp, CLICKS_BUTTON_TOTAL).ToString("n0")
         End If
     End Sub
 
     Function getClickCounterValue(timestamp As String, key As String) As Integer
-        Dim secName As String = "Clicks"
+        Dim secName As String = SettingsEnums.IniSection.CLICKS
         If Not CDate(timestamp).CompareTo(CDate(Now.ToShortDateString())) = 0 Then
             secName &= timestamp
         End If
@@ -270,10 +261,10 @@ Public Class GadgetsForm
         Return total
     End Function
     Sub clickCounterCumultative()
-        labelLeftTotal.Text = "Left: " & getClickCounterValueTotal("Left").ToString("n0")
-        labelRightTotal.Text = "Right: " & getClickCounterValueTotal("Right").ToString("n0")
-        labelMiddleTotal.Text = "Middle: " & getClickCounterValueTotal("Middle").ToString("n0")
-        labelTotalTotal.Text = "Total: " & getClickCounterValueTotal("Total").ToString("n0")
+        labelLeftTotal.Text = "Left: " & getClickCounterValueTotal(CLICKS_BUTTON_LEFT).ToString("n0")
+        labelRightTotal.Text = "Right: " & getClickCounterValueTotal(CLICKS_BUTTON_RIGHT).ToString("n0")
+        labelMiddleTotal.Text = "Middle: " & getClickCounterValueTotal(CLICKS_BUTTON_MIDDLE).ToString("n0")
+        labelTotalTotal.Text = "Total: " & getClickCounterValueTotal(CLICKS_BUTTON_TOTAL).ToString("n0")
     End Sub
 
     Function getFirstClickOccurence(key As String) As String
@@ -300,10 +291,10 @@ Public Class GadgetsForm
         Return diff
     End Function
     Sub clickCounterAverage()
-        labelLeftAv.Text = "Left: " & CInt(getClickCounterValueTotal("Left") / getAverageDiff("Left")).ToString("n0")
-        labelRightAv.Text = "Right: " & CInt(getClickCounterValueTotal("Right") / getAverageDiff("Right")).ToString("n0")
-        labelMiddleAv.Text = "Middle: " & CInt(getClickCounterValueTotal("Middle") / getAverageDiff("Middle")).ToString("n0")
-        labelTotalAv.Text = "Total: " & CInt(getClickCounterValueTotal("Total") / getAverageDiff("Total")).ToString("n0")
+        labelLeftAv.Text = "Left: " & CInt(getClickCounterValueTotal(CLICKS_BUTTON_LEFT) / getAverageDiff(CLICKS_BUTTON_LEFT)).ToString("n0")
+        labelRightAv.Text = "Right: " & CInt(getClickCounterValueTotal(CLICKS_BUTTON_RIGHT) / getAverageDiff(CLICKS_BUTTON_RIGHT)).ToString("n0")
+        labelMiddleAv.Text = "Middle: " & CInt(getClickCounterValueTotal(CLICKS_BUTTON_MIDDLE) / getAverageDiff(CLICKS_BUTTON_MIDDLE)).ToString("n0")
+        labelTotalAv.Text = "Total: " & CInt(getClickCounterValueTotal(CLICKS_BUTTON_TOTAL) / getAverageDiff(CLICKS_BUTTON_TOTAL)).ToString("n0")
     End Sub
 
     Private Sub averageUnitCombo_SelectedIndexChanged(sender As Object, e As EventArgs) Handles averageUnitCombo.SelectedIndexChanged
@@ -312,24 +303,22 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub resetButton_Click(sender As Object, e As EventArgs) Handles resetButton.Click
-        dll.iniWriteValue("Clicks" & Now.ToShortDateString, "Left", labelLeftCLick.Text.Substring(labelLeftCLick.Text.IndexOf(":") + 2).Replace(".", ""), Form1.inipath)
-        dll.iniWriteValue("Clicks" & Now.ToShortDateString, "Right", labelRightClick.Text.Substring(labelRightClick.Text.IndexOf(":") + 2).Replace(".", ""), Form1.inipath)
-        dll.iniWriteValue("Clicks" & Now.ToShortDateString, "Middle", labelMiddleClick.Text.Substring(labelMiddleClick.Text.IndexOf(":") + 2).Replace(".", ""), Form1.inipath)
-        dll.iniWriteValue("Clicks" & Now.ToShortDateString, "Total", labelTotalClick.Text.Substring(labelTotalClick.Text.IndexOf(":") + 2).Replace(".", ""), Form1.inipath)
+        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_LEFT, labelLeftCLick.Text.Substring(labelLeftCLick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
+        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_RIGHT, labelRightClick.Text.Substring(labelRightClick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
+        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_MIDDLE, labelMiddleClick.Text.Substring(labelMiddleClick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
+        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_TOTAL, labelTotalClick.Text.Substring(labelTotalClick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
         labelLeftCLick.Text = "Left: 0"
         labelRightClick.Text = "Right: 0"
         labelMiddleClick.Text = "Middle: 0"
         labelTotalClick.Text = "Total: 0"
-        dll.iniWriteValue("Clicks", "Left", 0, Form1.inipath)
-        dll.iniWriteValue("Clicks", "Right", 0, Form1.inipath)
-        dll.iniWriteValue("Clicks", "Middle", 0, Form1.inipath)
-        dll.iniWriteValue("Clicks", "Total", 0, Form1.inipath)
-
+        saveRawSetting(SettingsIdentifier.CLICK_COUNTER, CLICKS_BUTTON_LEFT, 0)
+        saveRawSetting(SettingsIdentifier.CLICK_COUNTER, CLICKS_BUTTON_RIGHT, 0)
+        saveRawSetting(SettingsIdentifier.CLICK_COUNTER, CLICKS_BUTTON_MIDDLE, 0)
+        saveRawSetting(SettingsIdentifier.CLICK_COUNTER, CLICKS_BUTTON_TOTAL, 0)
     End Sub
 
     Private Sub checkCc_CheckedChanged(sender As Object, e As EventArgs) Handles checkCc.CheckedChanged
-        Form1.clickCounter = sender.checked
-        dll.iniWriteValue("Config", "clickCounter", Math.Abs(CInt(sender.checked)))
+        saveSetting(SettingsIdentifier.CLICK_COUNTER_ENABLED, sender.checked)
     End Sub
 
 
@@ -340,7 +329,7 @@ Public Class GadgetsForm
 
     Sub fillAutostartList()
         autostartList.Items.Clear()
-        Dim allKeys() As String = dll.iniGetAllKeys("Autostarts", inipath)
+        Dim allKeys() As String = dll.iniGetAllKeys(IniSection.AUTOSTARTS, inipath)
         If allKeys IsNot Nothing Then
             For Each key In allKeys
                 autostartList.Items.Add(key)
@@ -358,14 +347,14 @@ Public Class GadgetsForm
     End Sub
 
     Function getAutostartPath(name As String) As String
-        Dim raw = dll.iniReadValue("Autostarts", name, "", inipath, 2048).Split(";")
+        Dim raw = dll.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length > 1 Then
             Return raw(1)
         End If
         Return ""
     End Function
     Function getAutostartArgs(name As String) As String
-        Dim raw = dll.iniReadValue("Autostarts", name, "", inipath, 2048).Split(";")
+        Dim raw = dll.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length > 2 Then
             Return raw(2)
         End If
@@ -373,7 +362,7 @@ Public Class GadgetsForm
     End Function
 
     Function getAutostartActive(name As String) As Boolean
-        Dim raw = dll.iniReadValue("Autostarts", name, "", inipath, 2048).Split(";")
+        Dim raw = dll.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length > 0 Then
             Return CBool(raw(0))
         End If
@@ -401,11 +390,11 @@ Public Class GadgetsForm
     Sub autostartSave()
         Dim name As String = textboxAutostartName.Text
         Dim s As String = Math.Abs(CInt(checkAutostartActive.Checked)) & ";" & textboxAutostartPath.Text & ";" & textboxAutostartArgs.Text
-        dll.iniWriteValue("Autostarts", name, s, inipath)
+        dll.iniWriteValue(IniSection.AUTOSTARTS, name, s, inipath)
     End Sub
 
     Function autoStartExists(name As String) As Boolean
-        Dim keys() As String = dll.iniGetAllKeys("Autostarts", inipath)
+        Dim keys() As String = dll.iniGetAllKeys(IniSection.AUTOSTARTS, inipath)
         If keys IsNot Nothing Then
             For Each value As String In keys
                 If value.ToLower = name.ToLower Then Return True
@@ -421,7 +410,7 @@ Public Class GadgetsForm
             MsgBox("Name not allowed", MsgBoxStyle.Exclamation)
         Else
             textboxAutostartName.Text = newName
-            dll.iniWriteValue("Autostarts", newName, "1", inipath)
+            dll.iniWriteValue(IniSection.AUTOSTARTS, newName, "1", inipath)
             autostartList.Items.Add(newName)
             autostartList.SelectedItem = newName
             checkAutostartActive.Checked = True
@@ -433,15 +422,14 @@ Public Class GadgetsForm
             textboxAutostartName.Text = ""
             textboxAutostartPath.Text = ""
             textboxAutostartArgs.Text = ""
-            dll.iniDeleteKey("Autostarts", autostartList.SelectedItem, inipath)
+            dll.iniDeleteKey(IniSection.AUTOSTARTS, autostartList.SelectedItem, inipath)
             fillAutostartList()
         End If
     End Sub
 
 
     Private Sub checkAutostart_CheckedChanged(sender As Object, e As EventArgs) Handles checkAutostart.CheckedChanged
-        Form1.autostarts = sender.checked
-        dll.iniWriteValue("Config", "autostarts", Math.Abs(CInt(sender.checked)))
+        saveSetting(SettingsIdentifier.AUTOSTARTS, sender.checked)
     End Sub
 
     Private Sub autostartFileDialogButton_Click(sender As Object, e As EventArgs) Handles autostartFileDialogButton.Click
@@ -467,8 +455,7 @@ Public Class GadgetsForm
 #Region "Cursor Mover" '01.06.2020
 
     Private Sub checkCursorMover_CheckedChanged(sender As Object, e As EventArgs) Handles checkCursorMover.CheckedChanged
-        Form1.cursorMover = sender.checked
-        dll.iniWriteValue("Config", "cursorMover", Math.Abs(CInt(sender.checked)))
+        saveSetting(SettingsIdentifier.CURSOR_MOVER, sender.checked)
     End Sub
 
     Private Sub numIncr_ValueChanged(sender As Object, e As EventArgs) Handles numIncr.ValueChanged
@@ -507,9 +494,8 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub checkAutoClicker_CheckedChanged(sender As Object, e As EventArgs) Handles checkAutoClicker.CheckedChanged
-        Form1.autoClicker = sender.checked
-        dll.iniWriteValue("Config", "autoClicker", Math.Abs(CInt(sender.checked)))
-        If Not Form1.autoClicker Then
+        saveSetting(SettingsIdentifier.AUTO_CLICKER, sender.checked)
+        If Not autoClicker Then
             Form1.clickerTimer.Stop()
         End If
     End Sub
@@ -547,8 +533,7 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub checkMacros_CheckedChanged(sender As Object, e As EventArgs) Handles checkMacros.CheckedChanged
-        Form1.macrosEnabled = sender.checked
-        dll.iniWriteValue("Config", "macrosEnabled", Math.Abs(CInt(sender.checked)))
+        saveSetting(SettingsIdentifier.MACROS_ENABLED, sender.checked)
     End Sub
 
     Private Sub macroFileButton_Click(sender As Object, e As EventArgs) Handles macroFileButton.Click
@@ -602,7 +587,7 @@ Public Class GadgetsForm
 
     Function getMacroFromIni(index As Integer) As Macro
         Dim res As New Macro(index, "Macro " & index + 1)
-        Dim raw = dll.iniReadValue("Macros", index, "", inipath, 2048).Split(";")
+        Dim raw = dll.iniReadValue(IniSection.MACROS, index, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length = 5 Then
             res.name = raw(0)
             res.active = raw(1)
@@ -639,7 +624,7 @@ Public Class GadgetsForm
             name = "Macro " & index + 1
         End If
         Dim s As String = name & ";" & Math.Abs(CInt(macroActiveCheckbox.Checked)) & ";" & textMacroPath.Text & ";" & textMacroArgs.Text & ";" & Math.Abs(CInt(checkMacroOverride.Checked))
-        dll.iniWriteValue("Macros", index, s, inipath)
+        dll.iniWriteValue(IniSection.MACROS, index, s, inipath)
     End Sub
 
 
@@ -659,7 +644,7 @@ Public Class GadgetsForm
     Private Sub checkKeylogger_Click(sender As Object, e As EventArgs) Handles checkKeylogger.Click
         If sender.checked Then
             KeyloggerModule.updateKeyLoggerOutputPath(textKeyloggerPath.Text)
-            dll.iniWriteValue("Config", "keyloggerPath", textKeyloggerPath.Text, inipath)
+            SettingsService.saveSetting(SettingsIdentifier.KEYLOGGER_PATH, textKeyloggerPath.Text)
             If Not KeyloggerModule.keyloggerInit(False) Then
                 sender.checked = False
                 textKeyloggerPath.SelectAll()
@@ -667,8 +652,7 @@ Public Class GadgetsForm
         Else
             KeyloggerModule.keyloggerDestroy()
         End If
-        Form1.keylogger = sender.checked
-        dll.iniWriteValue("Config", "keylogger", Math.Abs(CInt(sender.checked)))
+        saveSetting(SettingsIdentifier.KEYLOGGER, sender.checked)
     End Sub
 
     Private Sub checkKeylogger_CheckedChanged(sender As Object, e As EventArgs) Handles checkKeylogger.CheckedChanged
@@ -694,13 +678,11 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub checkKeyloggerAllowHotkeys_CheckedChanged(sender As Object, e As EventArgs) Handles checkKeyloggerAllowHotkeys.CheckedChanged
-        KeyloggerModule.allowHotkeys = sender.checked
-        dll.iniWriteValue("Config", "keyloggerAllowHotkeys", Math.Abs(CInt(sender.checked)))
+        SettingsService.saveSetting(SettingsIdentifier.KEYLOGGER_ALLOW_HOTKEYS, sender.checked)
     End Sub
 
     Private Sub checkKeyloggerRecordWindow_CheckedChanged(sender As Object, e As EventArgs) Handles checkKeyloggerRecordWindow.CheckedChanged
-        KeyloggerModule.recordWindow = sender.checked
-        dll.iniWriteValue("Config", "keyloggerRecordWindow", Math.Abs(CInt(sender.checked)))
+        SettingsService.saveSetting(SettingsIdentifier.KEYLOGGER_RECORD_WINDOW, sender.checked)
     End Sub
 
 

@@ -1,4 +1,5 @@
-﻿Public Class Track
+﻿Imports MediaPlayer.SettingsEnums
+Public Class Track
 
     Shared ReadOnly Property dll As Utils
         Get
@@ -10,21 +11,7 @@
             Return formhandle.root
         End Get
     End Property
-    Shared ReadOnly Property iniPath As String
-        Get
-            Return formhandle.inipath
-        End Get
-    End Property
-    Shared ReadOnly Property logpath As String
-        Get
-            Return formhandle.logpath
-        End Get
-    End Property
-    Shared ReadOnly Property playlistPath As String
-        Get
-            Return formhandle.playlistPath
-        End Get
-    End Property
+
     Shared ReadOnly Property currTrack As Track
         Get
             Return formhandle.currTrack
@@ -137,10 +124,10 @@
         End Try
     End Sub
     Sub updateCount()
-        count = dll.iniReadValue("Tracks", name, 0, iniPath)
+        count = loadRawSetting(SettingsIdentifier.TRACKS_COUNT, name)
     End Sub
     Sub updateLength()
-        length = dll.iniReadValue("Time", name, 0, iniPath)
+        length = loadRawSetting(SettingsIdentifier.TRACKS_TIME, name)
     End Sub
     Public Sub invalidateLength()
         length = formhandle.wmp.newMedia(fullPath).duration
@@ -155,7 +142,7 @@
     End Sub
     Sub updateParts()
         partsCount = getPartCount()
-        Dim p As String = formhandle.lyrpath & name & ".ini"
+        Dim p As String = lyrpath & name & ".ini"
         If partsCount > 0 Then
             parts = New List(Of TrackPart)
             For i = 0 To partsCount - 1
@@ -167,7 +154,7 @@
     End Sub
 
     Sub updateGenre()
-        Dim temp As Genre = Genre.getGenre(dll.iniReadValue("Genres", name, , iniPath))
+        Dim temp As Genre = Genre.getGenre(loadRawSetting(SettingsIdentifier.GENRES_MAPPING, name))
         If temp.Equals(Genre.Undefined) Then
             updateLocations()
             For Each folder As Folder In locations
@@ -214,14 +201,14 @@
             updateDate(True)
             Dim creationDate As String = IO.File.GetCreationTime(fullPath).ToShortDateString
             Dim modiDate As String = IO.File.GetLastWriteTime(fullPath).ToShortDateString
-            Dim a As String = InputBox("Type in date of track aquirement." & vbNewLine & vbNewLine & "File creation date: " & creationDate & _
-                                         vbNewLine & "File modifying date: " & modiDate, , _
+            Dim a As String = InputBox("Type in date of track aquirement." & vbNewLine & vbNewLine & "File creation date: " & creationDate &
+                                         vbNewLine & "File modifying date: " & modiDate, ,
                                        IIf(added = Nothing, "", added.ToShortDateString()))
             If Not a = "" Then
                 Dim dt As Date = Nothing
                 If Date.TryParse(a, dt) Then
                     Dim wInd As Integer = getLogDateIndex()
-                    dll.iniWriteValue("Musik", wInd, dt.ToShortDateString & "  -  " & name, logpath)
+                    dll.iniWriteValue(SettingsEnums.IniSection.LOG_DATE, wInd, dt.ToShortDateString & "  -  " & name, logpath)
                     formhandle.labelStatsUpdate()
                 Else
                     MsgBox("Invalid date Format. DD.MM.YYYY")
@@ -230,12 +217,12 @@
                 If Not added = Nothing Then
                     If MsgBox("Delete saved date?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
                         Dim wInd As Integer = getLogDateIndex()
-                        Dim vals() As String = dll.iniGetAllValues("Musik", logpath)
+                        Dim vals() As String = dll.iniGetAllValues(SettingsEnums.IniSection.LOG_DATE, logpath)
                         If vals IsNot Nothing Then
                             For i = wInd To vals.Length - 1
-                                dll.iniWriteValue("Musik", i, vals(i), logpath)
+                                dll.iniWriteValue(SettingsEnums.IniSection.LOG_DATE, i, vals(i), logpath)
                             Next
-                            dll.iniDeleteKey("Musik", vals.Length, logpath)
+                            dll.iniDeleteKey(SettingsEnums.IniSection.LOG_DATE, vals.Length, logpath)
                             formhandle.labelStatsUpdate()
                         End If
                     End If
@@ -258,7 +245,7 @@
     End Function
 
     Public Function getPartCount() As Integer
-        Dim ini As String = formhandle.lyrpath & name & ".ini"
+        Dim ini As String = lyrpath & name & ".ini"
         If IO.File.Exists(ini) = False Then
             Return 0
             ' ElseIf Not dll.iniIsValidKey("1", "time", ini) Then
@@ -351,8 +338,8 @@
     End Sub
 
     Sub insertToList(Optional index As Integer = -1)
-        Dim tempState As Form1.eSearchState = Form1.searchState
-        Form1.searchState = Form1.eSearchState.NONE
+        Dim tempState As PlayerEnums.SearchState = Form1.searchState
+        Form1.searchState = PlayerEnums.SearchState.NONE
         If index = -1 Then
             l2_2.Items.Add(Me)
         Else
@@ -525,7 +512,7 @@
 
 
     Overrides Function ToString() As String
-        If Form1.searchState = Form1.eSearchState.SEARCHING Then
+        If Form1.searchState = PlayerEnums.SearchState.SEARCHING Then
             Return "  " & name
         Else
             Return name ' dateString()  '& " - " & name

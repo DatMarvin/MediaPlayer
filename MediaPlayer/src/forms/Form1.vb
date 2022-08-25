@@ -1,215 +1,101 @@
 ﻿
 #Region "Imports"
-
 Imports System.IO
 Imports WMPLib
 Imports System.Runtime.InteropServices
-'Imports CoreAudioApi
-Imports System.Net
 Imports System.IO.Compression
-Imports System.Security
-Imports System.Security.Cryptography
 Imports System.Text
-Imports SpotifyAPI.Web
-Imports SpotifyAPI.Web.Http
-
-
+Imports MediaPlayer.PlayerEnums
+Imports MediaPlayer.SettingsService
+Imports MediaPlayer.SettingsEnums
 #End Region
 
 Public Class Form1
 
-#Region "Libraries"
-    Public Declare Sub mouse_event Lib "user32" Alias "mouse_event" (ByVal dwFlags As Integer, ByVal dx As Integer, ByVal dy As Integer, ByVal cButtons As Integer, ByVal dwExtraInfo As Integer)
-
-    Public Declare Function getForegroundWindow Lib "user32" Alias "GetForegroundWindow" () As IntPtr
-    Private Const MOUSEEVENTF_LEFTDOWN = &H2 : Private Const MOUSEEVENTF_LEFTUP = &H4
-    Private Const MOUSEEVENTF_RIGHTDOWN = &H8 : Private Const MOUSEEVENTF_RIGHTUP = &H10
-    Private Const MOUSEEVENTF_MIDDLEDOWN = &H20 : Private Const MOUSEEVENTF_MIDDLEUP = &H40
-    Private Const MOUSEEVENTF_WHEELROTATE = &H800
-    Public Declare Function GetAsyncKeyState Lib "user32" (ByVal nVirtKey As Integer) As Short
+#Region "Variables"
     Public Const minWidth As Integer = 908
     Public Const minHeight As Integer = 577
-#End Region
 
-#Region "Variables"
     Public dll As New Utils
-    Dim rnd As New Random
-    Public inipath As String
-    Public logpath As String
-    Public path As String
-    Public playlistPath As String
-    Dim encodebln As Boolean = True
-    Public locked As Boolean = False
+    ReadOnly rnd As New Random
+
+
     Dim lockChange As Boolean = False
-    Dim mode As playMode
+
     Public currTrack As Track
     Public last As Track
-    '01.12.2012 beatcount
-    '11.12.2012 search
-    '20.03.2013
-    Public trackLoop As loopMode
+    Public trackLoop As LoopMode
     Public loopVals(2) As Double
-    '22.04.2013 totaltime
-    '13.05.2013 dll
-    '15.06.2013 lyrics
-    Public lyrpath As String
-    '26.08.2013
-    '  Dim currtrackfull As String
-    '27.03.2014 reversed sort
-    '02.06.2014
     Public gldt As New List(Of String)
     Public glnames As New List(Of String)
-    '18.06.2014 playlists directory - removed 13.10.17
-    '30.08.2014 fblikes - removed 06.04.16
-    '16.09.2014 parts '20.02.2017 part name
+
     ReadOnly Property currTrackPart As TrackPart
         Get
             Return currTrack.currPart
         End Get
     End Property
-    '09.01.2015 drag drop
-    ' Dim cx As Integer
-    '   Dim cy As Integer
+
     Dim dItem As Track
     Dim dragList As ListBox
-    '07.04.2015 retardedstop - removed
-    '05.06.2015 click count
-    Dim cll As Long = 0
-    Dim clr As Long = 0
-    Dim clm As Long = 0
-    Dim downl As Boolean = False
-    Dim downr As Boolean = False
-    Dim downm As Boolean = False
-    '22.07.2015 resize - removed 10.09.2019
-    '23.07.2015 youtube removed 02.03.2016
-    '30.07.2015 I/O reduction
-    Dim firstPlayStart As firstStartState
-    '01.09.2015 tree view
+
+    Dim firstPlayStart As FirstStartState
+
     Public root As String
-    '02.11.2015 genre list;10.10.2018 Genre class
-    '16.11.2015 my.settings removed
-    Public radio As Boolean
-    '05.03.2016 lyrics+parts combined
-    ' Dim lyricsMode As Boolean
-    '06.04.2016 track/folder class
-    ' Dim currMedia As IWMPMedia
-    '21.09.2016 key class
-    Public delayMs As Integer = 250
-    '31.03.2017 gadgets+radio options
-    Public autoClicker As Boolean
-    Public clickCounter As Boolean
-    Public cursorMover As Boolean
-    Public cursorMoverIncr As Integer
-    Public cursorMoverDelay As Integer
-    Public autoClickerFreq As Integer
-    Public autoClickerRep As Integer
-    Public radioSort As Integer
-    '23.05.2017 TCP
+
     Dim lastTCPCommand As String
     Public remoteTcp As New Tcp()
-    '27.07.2017 ftp
-    Public ftpPath As String
-    '29.09.2017 playlist l2_2
+
     Public playlist As New List(Of Track)
-    '13.10.2017 - 01.06.2020 move to gadget window
-    ' Public commPath As String
-    '28.10.2017 save option state
+
     Public lastOptionsState As OptionsForm.optionState
-    Public ReadOnly Property optionsMode As Boolean
-        Get
-            Return OptionsForm.Visible
-        End Get
-    End Property
-    Public dateLogStart As Date
-    '06.09.2018 track list sort fix+track filesystem
-    Public trackSort As sortMode
+
     Dim fswFlag As Boolean
-    '01.10.2018
+
     Dim currLyrTrack As Track
     Public overlayMode As eOverlayMode
-    Dim searchAllFolders As Boolean
-    Dim searchParts As Boolean
-    Public searchState As eSearchState
-    '13.08.2019
-    Public darkTheme As Boolean
-    Public saveWinPosSize As Boolean
-    '09.09.2019
-    Public balance As Integer
-    Public playRate As Double
-    '29.12.2019
-    Public macrosEnabled As Boolean
-    Public randomNextTrack As Boolean
-    Public savePlaylistHistory As Boolean
-    '17.01.2020
-    Public adminRights As Boolean
-    '06.05.2020
+
+    Public searchState As SearchState
+
+    '   Public savePlaylistHistory As Boolean
+
     Public lastGadgetsState As GadgetsForm.GadgetState
-    Public autostarts As Boolean
-    '30.05.2020
+
     Public WithEvents dragDropNextField As Button
     Public WithEvents dragDropQueueField As Button
-    ' Public commArgs As String
-    ' Public commHotkeyOverride As Boolean
-    Public keylogger As Boolean
-    '06.10.2020
-    Public removeNextTrack As Boolean
-    '11.05.2021
-    Public logPathKey As String
+
     Public datesInitiallyLoaded As Boolean = False
 
 #End Region
 
-#Region "Enums"
-    Enum playMode
-        STRAIGHT
-        REPEAT
-        RANDOM
-    End Enum
-    Enum loopMode
-        NO
-        INTERMEDIATE
-        YES
-    End Enum
-    Enum firstStartState
-        INIT
-        STARTING
-        STARTED
-    End Enum
-#End Region
 
 #Region "Form1"
 
     Private Sub Form1_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
-        dll.iniWriteValue("Config", "volume", wmp.settings.volume, inipath)
-        dll.iniWriteValue("Config", "playmode", mode, inipath)
-        dll.iniWriteValue("Config", "radio", Math.Abs(CInt(radio)), inipath)
-        If WindowState = FormWindowState.Maximized Then
-            dll.iniWriteValue("Config", "winMax", "True", inipath)
-            '  dll.iniWriteValue("Config", "winSize", minWidth & ";" & minHeight, inipath)
-            ' dll.iniDeleteKey("Config", "winPos", inipath)
-        Else
-            dll.iniWriteValue("Config", "winMax", "False", inipath)
-        End If
+        SettingsService.saveSetting(SettingsIdentifier.VOLUME, wmp.settings.volume)
+        SettingsService.saveSetting(SettingsIdentifier.PLAY_MODE, playMode)
+        SettingsService.saveSetting(SettingsIdentifier.MUSIC_SOURCE, CInt(radioEnabled))
+        SettingsService.saveSetting(SettingsIdentifier.WIN_MAX, WindowState = FormWindowState.Maximized)
 
         If keylogger Then
             KeyloggerModule.keyloggerDestroy()
         End If
 
-        If l2.SelectedIndex > -1 And tv.SelectedNode IsNot Nothing And Not radio And Not last = Nothing Then
+        If l2.SelectedIndex > -1 And tv.SelectedNode IsNot Nothing And Not radioEnabled And Not last = Nothing Then
             saveLastTrack()
         End If
 
-        If savePlaylistHistory Then
+        If SettingsService.getSetting(SettingsIdentifier.PLAYLIST_SAVE_HISTORY) Then
             saveCurrPlaylistHistory()
         End If
 
-        If radio Then saveRadioTime()
+        If radioEnabled Then saveRadioTime()
 
         TcpStopAllConnections("close", False)
     End Sub
 
     Sub colorForm(ByVal lock As Boolean, Optional ByVal inverted As Boolean = False) '06.03.2017
-        darkTheme = inverted
+        setSetting(SettingsIdentifier.DARK_THEME, inverted)
+        'darkTheme = inverted
 
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(35, 35, 35), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
@@ -224,7 +110,7 @@ Public Class Form1
             invDarkCol = Color.Black
         End If
 
-        Dim elements() As Control = {Me, MenuStrip, con1, con2, labelPartName, labelPartsCount, labelPartsCount2, labelLoop, labelCount, labelCount2, labelDateAdded, labelDateAdded2,
+        Dim elements() As Control = {Me, menuStrip, con1, con2, labelPartName, labelPartsCount, labelPartsCount2, labelLoop, labelCount, labelCount2, labelDateAdded, labelDateAdded2,
                                       labelPopularity, labelPopularity2, labelTimeListened2, labelTimeListened, labelGenre2, labelGenre, labelLength2, labelLength, checkSeachAllFolders, checkSearchParts}
         For Each c As Control In elements
             c.BackColor = darkCol
@@ -236,7 +122,7 @@ Public Class Form1
             c.BackColor = lightCol
             c.ForeColor = invLightCol
         Next
-        tSearch.ForeColor = IIf(searchState = eSearchState.NONE, Color.DimGray, IIf(inverted, Color.White, Color.Black))
+        tSearch.ForeColor = IIf(searchState = SearchState.NONE, Color.DimGray, IIf(inverted, Color.White, Color.Black))
 
         labelNextTrack.BackColor = Color.White 'nexttrack
         labelPrevTrack.BackColor = Color.White 'prevtrack
@@ -244,29 +130,27 @@ Public Class Form1
 
         'If Not lock Then menuSettingsInvertColors.Checked = inverted 'save inv state when locked
 
-        dll.iniWriteValue("Config", "invColors", inverted.ToString(), inipath)
-
         setMenuIcons()
     End Sub
 
     Public ReadOnly Property getLightColor() As Color
         Get
-            Return IIf(locked, Color.DimGray, IIf(darkTheme, Color.FromArgb(50, 50, 50), Color.White))
+            Return IIf(formLocked, Color.DimGray, IIf(darkTheme, Color.FromArgb(50, 50, 50), Color.White))
         End Get
     End Property
     Public ReadOnly Property getDarkColor() As Color
         Get
-            Return IIf(locked, Color.DimGray, IIf(darkTheme, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240)))
+            Return IIf(formLocked, Color.DimGray, IIf(darkTheme, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240)))
         End Get
     End Property
     Public ReadOnly Property getInvLightColor() As Color
         Get
-            Return IIf(locked, Color.Black, IIf(Not darkTheme, Color.Black, Color.White))
+            Return IIf(formLocked, Color.Black, IIf(Not darkTheme, Color.Black, Color.White))
         End Get
     End Property
     Public ReadOnly Property getInvDarkColor() As Color
         Get
-            Return IIf(locked, Color.Black, IIf(Not darkTheme, Color.Black, Color.FromArgb(255, 240, 240, 240)))
+            Return IIf(formLocked, Color.Black, IIf(Not darkTheme, Color.Black, Color.FromArgb(255, 240, 240, 240)))
         End Get
     End Property
 
@@ -276,91 +160,18 @@ Public Class Form1
 
     Private Sub Form1_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
 
+        VersionUpdateService.checkForVersionUpdate()
+
         MinimumSize = New Size(minWidth, minHeight)
 
-        If My.Application.CommandLineArgs.Count > 0 Then
-            Dim para As String = My.Application.CommandLineArgs(0)
-            If para.StartsWith("up") Then
-                install()
-            End If
-        End If
+        SettingsService.initSystemSettings()
 
-        inipath = GetSetting(My.Application.Info.ProductName, "Config", "inipath")
-        If Not IO.File.Exists(inipath) Then
-            showOptions(OptionsForm.optionState.PATHS, True)
-        End If
-        path = dll.iniReadValue("Config", "path", , inipath)
-        If Not IO.Directory.Exists(path) Then
-            showOptions(OptionsForm.optionState.PATHS, True)
-        End If
-        playlistPath = dll.iniReadValue("Config", "playlistpath", , inipath)
-        logpath = dll.iniReadValue("Config", "logpath", , inipath)
-        lyrpath = dll.iniReadValue("Config", "lyrpath", , inipath)
-        ftpPath = dll.iniReadValue("Config", "ftpPath", , inipath)
-        If playlistPath = "" Or logpath = "" Or lyrpath = "" Or ftpPath = "" Then
-            If Not dll.iniIsValidKey("Config", "playlistpath", inipath) Or Not dll.iniIsValidKey("Config", "logpath", inipath) Or Not dll.iniIsValidKey("Config", "lyrpath", inipath) Or Not dll.iniIsValidKey("Config", "ftpPath", inipath) Then
-                showOptions(OptionsForm.optionState.PATHS, True)
-            End If
-        End If
-
-        Folder.setTopFolder(path)
+        Folder.setTopFolder(getSetting(SettingsIdentifier.PATH))
         Folder.invalidateFolders(Folder.top)
         Track.invalidateTracks(True)
 
-        If dll.iniReadValue("Config", "remote", 0, inipath) = 1 Then TcpStart(dll.iniReadValue("Config", "port", 55555, inipath), False)
-        If Not dll.iniReadValue("Config", "Genres", , inipath) = "" Then
-            Genre.initGenres(Me, dll.iniReadValue("Config", "Genres", , inipath, 8192).Split(";"))
-        Else
-            Genre.initGenres(Me, Nothing)
-        End If
+        initPlayerSettings()
 
-        logPathKey = GetSetting("mp3player", "Config", "logPathKey")
-        changePlayMode(dll.iniReadValue("Config", "playmode", playMode.REPEAT, inipath))
-        wmp.settings.volume = dll.iniReadValue("Config", "volume", 1, inipath)
-        radio = dll.iniReadValue("Config", "radio", 0, inipath)
-        autoClicker = dll.iniReadValue("Config", "autoClicker", 1, inipath)
-        clickCounter = dll.iniReadValue("Config", "clickCounter", 1, inipath)
-        cursorMover = dll.iniReadValue("Config", "cursorMover", 1, inipath)
-        cursorMoverIncr = dll.iniReadValue("Config", "cursorMoverIncr", 1, inipath)
-        cursorMoverDelay = dll.iniReadValue("Config", "cursorMoverDelay", 200, inipath)
-        autoClickerFreq = dll.iniReadValue("Config", "autoClickerFreq", 1, inipath)
-        clickerTimer.Interval = autoClickerFreq
-        autoClickerRep = dll.iniReadValue("Config", "autoClickerRep", 1, inipath)
-        macrosEnabled = dll.iniReadValue("Config", "macrosEnabled", 1, inipath)
-        radioSort = dll.iniReadValue("Config", "radioSort", 1, inipath)
-        trackSort = dll.iniReadValue("Config", "trackSort", 0, inipath)
-        searchAllFolders = dll.iniReadValue("Config", "searchAllFolders", 0, inipath)
-        searchParts = dll.iniReadValue("Config", "searchParts", 0, inipath)
-        darkTheme = dll.iniReadValue("Config", "invColors", 0, inipath)
-        saveWinPosSize = dll.iniReadValue("Config", "saveWinPosSize", 0, inipath)
-        balance = dll.iniReadValue("Config", "balance", 0, inipath)
-        playRate = dll.iniReadValue("Config", "playRate", 1.0, inipath)
-        randomNextTrack = dll.iniReadValue("Config", "randomNextTrack", 1, inipath)
-        savePlaylistHistory = dll.iniReadValue("Config", "savePlaylistHistory", 0, inipath)
-        autostarts = dll.iniReadValue("Config", "autostarts", 1, inipath)
-        keylogger = dll.iniReadValue("Config", "keylogger", 0, inipath)
-        removeNextTrack = dll.iniReadValue("Config", "removeNextTrack", 1, inipath)
-
-        Try
-            Dim fi As New FileInfo(My.Application.Info.DirectoryPath & "\" & My.Application.Info.AssemblyName & ".exe")
-            Dim def As String = fi.LastWriteTime.ToShortDateString()
-            dateLogStart = CDate(dll.iniReadValue("Config", "dateLogStart", def, inipath))
-        Catch ex As Exception
-            dateLogStart = CDate("01.12.2017")
-        End Try
-
-        loadFont(tv, "fontFolders", New Font("Microsoft Sans Serif", 15))
-        loadFont(l2, "fontTracks", New Font("Microsoft Sans Serif", 10))
-        loadFont(l2_2, "fontTracks", New Font("Microsoft Sans Serif", 10))
-
-        colorForm(False, dll.iniReadValue("Config", "invColors", "False", inipath))
-        delayMs = dll.iniReadValue("config", "delay", 250, inipath)
-        keydelayt.Interval = delayMs
-
-
-        dll.ftpCred.ip = dll.iniReadValue("Config", "ftpIp", "127.0.0.1", inipath)
-        dll.ftpCred.user = dll.iniReadValue("Config", "ftpUser", "updateplayer", inipath)
-        dll.ftpCred.pw = dll.iniReadValue("Config", "ftpPw", "huan", inipath)
 
         Key.initKeys()
 
@@ -369,22 +180,22 @@ Public Class Form1
         picRandom.BringToFront()
         currTrack = Nothing
 
-        AddHandler con2AddToPlaylist.DropDownItemClicked, AddressOf con2AddToPlaylist_Clicked
         fsw.Path = path
         fsw.IncludeSubdirectories = True
-
-        adminRights = My.User.IsInRole(ApplicationServices.BuiltInRole.Administrator)
 
         wmp.settings.balance = balance
         wmp.settings.rate = playRate
 
         formResize()
+        colorForm(formLocked, darkTheme)
 
         executeAutoStarts()
         If keylogger Then
             KeyloggerModule.keyloggerInit()
         End If
         GadgetsForm.initMacrosTable()
+
+        updatePlayMode()
 
         alltime.Start()
         keyt.Start()
@@ -394,14 +205,14 @@ Public Class Form1
 
         If My.Application.CommandLineArgs.Count = 0 Then
 
-            If radio Then
+            If radioEnabled Then
                 changeSourceMode(1)
             Else
                 localfill()
             End If
 
-            If savePlaylistHistory Then
-                Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs("history", inipath)
+            If getSetting(SettingsIdentifier.PLAYLIST_SAVE_HISTORY) Then
+                Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs(IniSection.HISTORY, inipath)
                 If pairs IsNot Nothing Then
                     For Each p As KeyValuePair(Of String, String) In pairs
                         Dim addTrack As Track = Nothing
@@ -419,26 +230,26 @@ Public Class Form1
                 If Not prioTrack = Nothing Then
                     prioTrack.selectPlaylist()
                 End If
-                dll.iniDeleteSection("history", inipath)
+                dll.iniDeleteSection(IniSection.HISTORY, inipath)
             End If
             If Not last = Nothing Then
                 Dim l As ListBox = getSelectedList()
                 If l.SelectedItem IsNot Nothing AndAlso l.SelectedItem.name = last.name Then
-                    If dll.iniReadValue("temp", last.name, 0, inipath) > 0 Then
-                        dll.iniWriteValue("timetemp", last.name, dll.iniReadValue("temp", last.name, 100), inipath)
-                        dll.iniDeleteSection("temp", inipath)
+                    If SettingsService.loadSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME) > 0.0 Then
+                        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_APPLY_TIME, SettingsService.getSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME))
+                        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME, 0.0)
                     End If
                 End If
-            ElseIf Not radio Then
+            ElseIf Not radioEnabled Then
                 If l2.Items.Count > 0 Then l2.SelectedIndex = rnd.Next(0, l2.Items.Count)
             End If
 
-            savePaths()
+            '   savePaths()
 
         ElseIf My.Application.CommandLineArgs.Count > 0 Then
             Dim para As String = My.Application.CommandLineArgs(0)
             If File.Exists(para) Then
-                radio = False
+                setSetting(SettingsIdentifier.MUSIC_SOURCE, MusicSource.LOCAL)
                 If Not para.ToLower.StartsWith(Folder.top.fullPath.ToLower) Then
                     Folder.setTopFolder(Mid(para, 1, para.LastIndexOf("\") + 1))
                 End If
@@ -467,7 +278,7 @@ Public Class Form1
                 Next
                 playlist(0).play()
             Else
-                radio = False
+                setSetting(SettingsIdentifier.MUSIC_SOURCE, MusicSource.LOCAL)
                 localfill()
                 initSearch()
                 tSearch.Text = para
@@ -478,7 +289,8 @@ Public Class Form1
 
     Sub loadWinPosSize()
         Dim x, y, w, h As Integer
-        Dim siz As String = dll.iniReadValue("Config", "winSize", "0;0", inipath)
+
+        Dim siz As String = SettingsService.getSetting(SettingsIdentifier.WIN_SIZE)
         Try
             w = siz.Split(";")(0)
             h = siz.Split(";")(1)
@@ -487,7 +299,7 @@ Public Class Form1
         Catch ex As Exception
             w = minWidth : h = minHeight
         End Try
-        Dim pos As String = dll.iniReadValue("Config", "winPos", "0;0", inipath)
+        Dim pos As String = SettingsService.getSetting(SettingsIdentifier.WIN_POS)
         Try
             x = pos.Split(";")(0)
             y = pos.Split(";")(1)
@@ -497,7 +309,7 @@ Public Class Form1
         End Try
         Size = New Size(w, h)
         Location = New Point(x, y)
-        If dll.iniReadValue("Config", "winMax", 0, inipath) Then WindowState = FormWindowState.Maximized
+        If SettingsService.getSetting(SettingsIdentifier.WIN_MAX) Then WindowState = FormWindowState.Maximized
         formResize()
     End Sub
 
@@ -507,7 +319,7 @@ Public Class Form1
 
 
     Private Sub keys_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles keyt.Tick
-        If Not locked And (Not keylogger Or KeyloggerModule.allowHotkeys) Then keyPressHandler()
+        If Not formLocked And (Not keylogger Or KeyloggerModule.allowHotkeys) Then keyPressHandler()
     End Sub
 
     Private Sub globalKeyPressHandler()
@@ -527,7 +339,7 @@ Public Class Form1
             For i = 0 To GadgetsForm.MACROS_COUNT - 1
                 Dim macro As GadgetsForm.Macro = GadgetsForm.macros(i)
                 If macro.active Then
-                    If Not locked OrElse macro.hotkeyOverride Then
+                    If Not formLocked OrElse macro.hotkeyOverride Then
                         If Not String.IsNullOrEmpty(macro.path) Then
                             If Key.keyList(37 + i).pressed Then
                                 Try
@@ -578,13 +390,13 @@ Public Class Form1
         Select Case k.name
             Case Key.keyName.Play_Pause
                 If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    If radio Then
+                    If radioEnabled Then
                         wmp.settings.mute = Not wmp.settings.mute
                     Else
                         wmp.Ctlcontrols.pause()
                     End If
                 ElseIf wmp.playState = WMPLib.WMPPlayState.wmppsPaused Then
-                    If Not radio Then
+                    If Not radioEnabled Then
                         wmp.Ctlcontrols.play()
                     Else
                         saveRadioTime()
@@ -593,7 +405,7 @@ Public Class Form1
                         wmpstart(l2.SelectedItem)
                     End If
                 ElseIf wmp.playState = WMPLib.WMPPlayState.wmppsUndefined Then
-                    If Not radio Then
+                    If Not radioEnabled Then
                         If l2.SelectedIndex = -1 Then
                             setlistselected()
                             playlist(l2_2.SelectedIndex).play()
@@ -610,7 +422,7 @@ Public Class Form1
                 keydelay()
 
             Case Key.keyName.Next_Track
-2:              If Not radio Then
+2:              If Not radioEnabled Then
                     playNextTrack()
                     keydelay()
                 Else
@@ -623,7 +435,7 @@ Public Class Form1
                 End If
                 Exit Sub
             Case Key.keyName.Previous_Track
-3:              If Not radio Then
+3:              If Not radioEnabled Then
                     playPrevTrack()
                     keydelay()
                 Else
@@ -697,15 +509,15 @@ Public Class Form1
                     End Try
                 End If
             Case Key.keyName.Repeat_Mode
-                changePlayMode(playMode.REPEAT)
+                changePlayMode(PlayMode.REPEAT)
             Case Key.keyName.Random_Mode
-                changePlayMode(playMode.RANDOM)
+                changePlayMode(PlayMode.RANDOM)
             Case Key.keyName.Source_Local
                 changeSourceMode(0)
             Case Key.keyName.Source_Radio
                 changeSourceMode(1)
             Case Key.keyName.Tree_Up
-                If Not radio Then
+                If Not radioEnabled Then
                     If Not IsNothing(tv.SelectedNode.PrevNode) Or Not IsNothing(tv.SelectedNode.Parent) Then
                         If Not IsNothing(tv.SelectedNode.PrevNode) Then
                             tv.SelectedNode = tv.SelectedNode.PrevNode
@@ -717,7 +529,7 @@ Public Class Form1
                     End If
                 End If
             Case Key.keyName.Tree_Down
-                If Not radio Then
+                If Not radioEnabled Then
                     If Not IsNothing(tv.SelectedNode.NextNode) Then
                         tv.SelectedNode = tv.SelectedNode.NextNode
                     Else
@@ -755,28 +567,28 @@ Public Class Form1
                     keydelay()
                 End If
             Case Key.keyName.Track_Loop
-                If Not radio Then
+                If Not radioEnabled Then
                     If wmp.Ctlcontrols.currentPosition >= 0 Then
-                        If trackLoop = loopMode.NO Then
-                            trackLoop = loopMode.INTERMEDIATE
+                        If trackLoop = LoopMode.NO Then
+                            trackLoop = LoopMode.INTERMEDIATE
                             labelLoop.Cursor = Cursors.Hand
                             loopVals(1) = wmp.Ctlcontrols.currentPosition
                             labelStatsUpdate()
                             keydelay(200)
-                        ElseIf trackLoop = loopMode.INTERMEDIATE Then
-                            trackLoop = loopMode.YES
+                        ElseIf trackLoop = LoopMode.INTERMEDIATE Then
+                            trackLoop = LoopMode.YES
                             labelLoop.Cursor = Cursors.Hand
                             loopVals(2) = wmp.Ctlcontrols.currentPosition
                             keydelay()
                             keydelay(150)
-                        ElseIf trackLoop = loopMode.YES Then
+                        ElseIf trackLoop = LoopMode.YES Then
                             resetLoop()
                             keydelay(100)
                         End If
                     End If
                 End If
             Case Key.keyName.Search
-                If Not radio Then
+                If Not radioEnabled Then
                     If Not ContainsFocus Then
                         Key.keyList.Item(Key.keyName.Restore_Window).execute()
                     End If
@@ -793,7 +605,7 @@ Public Class Form1
             Case Key.keyName.Count_Sub
                 Dim l As ListBox = getSelectedList()
                 If l IsNot Nothing Then
-                    dll.iniWriteValue("Tracks", l.SelectedItem.name, l.SelectedItem.count - 1, inipath)
+                    saveRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem, l.SelectedItem.count - 1)
                     labelStatsUpdate(l)
                 End If
                 keydelay(150)
@@ -804,9 +616,9 @@ Public Class Form1
                 If l IsNot Nothing Then
                     Dim c As Integer = l.SelectedItem.count
                     If c = 0 Then
-                        dll.iniWriteValue("Tracks", l.SelectedItem.name, dll.iniReadValue("Tracks", l.SelectedItem.name, 0, inipath) + 1, inipath)
+                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem, loadRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem.name) + 1)
                     Else
-                        dll.iniWriteValue("Tracks", l.SelectedItem.name, l.SelectedItem.count + 1, inipath)
+                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem, l.SelectedItem.count + 1)
                         labelStatsUpdate(l)
                     End If
                 End If
@@ -849,21 +661,21 @@ Public Class Form1
     Private Sub keydelayt_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles keydelayt.Tick
         keydelayt.Stop()
         keydelayt.Interval = delayMs
-        If locked = False Then keyt.Enabled = True
+        If Not formLocked Then keyt.Enabled = True
     End Sub
 
     Private Sub iniValT_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles iniValT.Tick
         If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-            If Not radio Then
+            If Not radioEnabled Then
                 If currTrack IsNot Nothing Then currTrack.currPart = currTrack.getCurrentPart(wmp.Ctlcontrols.currentPosition)
                 If Not last = Nothing Then saveLastTrack()
 
                 If Not currTrack = Nothing Then
-                    dll.iniWriteValue("temp", currTrack.name, wmp.Ctlcontrols.currentPosition, inipath)
+                    SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME, wmp.Ctlcontrols.currentPosition)
                     If wmp.currentMedia IsNot Nothing Then
                         Try
                             If wmp.currentMedia.duration > 0 Then
-                                dll.iniWriteValue("Time", currTrack.name, wmp.currentMedia.duration, inipath)
+                                saveRawSetting(SettingsIdentifier.TRACKS_TIME, currTrack.name, wmp.currentMedia.duration)
                             End If
                             labelStatsUpdate()
                         Catch ex As Exception
@@ -873,8 +685,8 @@ Public Class Form1
                     End If
                 End If
             End If
-            dll.iniWriteValue("Config", "volume", wmp.settings.volume, inipath)
-            dll.iniWriteValue("Config", "playmode", mode, inipath)
+            SettingsService.saveSetting(SettingsIdentifier.VOLUME, wmp.settings.volume)
+            SettingsService.saveSetting(SettingsIdentifier.PLAY_MODE, playMode)
         End If
     End Sub
 
@@ -894,7 +706,7 @@ Public Class Form1
     End Sub
 
     Private Sub radiotimer_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles radiotimer.Tick
-        If radio AndAlso wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
+        If radioEnabled AndAlso wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
             If Not wmp.playState = WMPLib.WMPPlayState.wmppsTransitioning Then
                 If l2.SelectedItem IsNot Nothing Then l2.SelectedItem.timetemp = wmp.Ctlcontrols.currentPosition
             End If
@@ -904,19 +716,12 @@ Public Class Form1
 
     Private Sub clicker_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles clickerTimer.Tick
         For i = 1 To autoClickerRep
-            lMouseClick()
+            Utils.lMouseClick()
         Next
     End Sub
 
     Private Sub clickcountt_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles clickcountt.Tick
-        Dim totcurr As Long = cll + clr + clm
-        dll.iniWriteValue("Clicks", "Left", CLng(dll.iniReadValue("Clicks", "Left", 0, inipath)) + cll, inipath)
-        dll.iniWriteValue("Clicks", "Right", CLng(dll.iniReadValue("Clicks", "right", 0, inipath)) + clr, inipath)
-        dll.iniWriteValue("Clicks", "Middle", CLng(dll.iniReadValue("Clicks", "middle", 0, inipath)) + clm, inipath)
-        dll.iniWriteValue("Clicks", "Total", CLng(dll.iniReadValue("Clicks", "Total", 0, inipath)) + totcurr, inipath)
-        cll = 0
-        clr = 0
-        clm = 0
+        ClickGadget.flushClickCounter()
     End Sub
 
     Private Sub keyloggerTimer_Tick(sender As Object, e As EventArgs) Handles keyloggerTimer.Tick
@@ -1032,8 +837,8 @@ Public Class Form1
 
 #Region "Local Source/Playlist"
     Private Sub ImportPlaylistToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MenuSourceExternalMedia.Click
-        If Not radio Then
-            If Not searchState = eSearchState.NONE Then cancelSearch()
+        If Not radioEnabled Then
+            If Not searchState = SearchState.NONE Then cancelSearch()
             Dim ao As New OpenFileDialog
             ao.Multiselect = True
             ao.ShowDialog()
@@ -1069,19 +874,19 @@ Public Class Form1
 
     End Sub
     Private Sub LocalSourceToolStripMenuItem_DropDownOpening(ByVal sender As Object, ByVal e As System.EventArgs) Handles MenuSource.DropDownOpening
-        MenuSourceLocalRadio.Text = IIf(radio, "Local", "Radio")
+        MenuSourceLocalRadio.Text = IIf(radioEnabled, "Local", "Radio")
     End Sub
     Private Sub RadioToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MenuSourceLocalRadio.Click
-        changeSourceMode(Not radio)
+        switchSourceMode()
     End Sub
 #End Region
 
 #Region "Settings"
     Sub lockFormSwitch()
-        locked = Not locked
-        colorForm(locked, darkTheme)
+        setSetting(SettingsIdentifier.FORM_LOCKED, Not getSetting(SettingsIdentifier.FORM_LOCKED))
+        colorForm(formLocked, darkTheme)
         setLockImage()
-        If locked Then
+        If formLocked Then
             keyt.Stop()
             lockChange = True
         Else
@@ -1091,7 +896,7 @@ Public Class Form1
         End If
     End Sub
     Sub setLockImage()
-        If locked Then
+        If formLocked Then
             menuLock.Image = IIf(darkTheme, My.Resources.unlock_inv, My.Resources.unlock)
             menuLock.ToolTipText = "Unlock Hotkeys"
         Else
@@ -1116,7 +921,7 @@ Public Class Form1
     End Sub
     Sub setLyricsImage()
         Dim l As ListBox = getSelectedList()
-        If radio Or l Is Nothing OrElse l.SelectedIndex = -1 OrElse TypeOf l.SelectedItem IsNot Track Then
+        If radioEnabled Or l Is Nothing OrElse l.SelectedIndex = -1 OrElse TypeOf l.SelectedItem IsNot Track Then
             menuLyrics.Image = IIf(darkTheme, My.Resources.cross_inv, My.Resources.cross)
         Else
             Dim track As Track = l.SelectedItem
@@ -1145,7 +950,7 @@ Public Class Form1
 
 
     Private Sub menuIcons_MouseHover(sender As Object, e As EventArgs) Handles menuLock.MouseHover, menuRemote.MouseHover, menuSettings.MouseHover, menuGadgets.MouseHover
-        ttShow(sender.ToolTipText, MenuStrip, Cursor.Position.X + 10 - MenuStrip.Left - Left, Cursor.Position.Y - 28 - MenuStrip.Top - Top, 1000)
+        ttShow(sender.ToolTipText, menuStrip, Cursor.Position.X + 10 - menuStrip.Left - Left, Cursor.Position.Y - 28 - menuStrip.Top - Top, 1000)
     End Sub
 
 
@@ -1163,9 +968,9 @@ Public Class Form1
         Catch ex As Exception
             val = 1.0
         End Try
-        playRate = val
+        '  playRate = val
         If optionsMode Then OptionsForm.labelPlayRate.Text = "Play Rate: " & val
-        dll.iniWriteValue("Config", "playRate", val, inipath)
+        saveSetting(SettingsIdentifier.PLAY_RATE, val)
     End Sub
 
     Public Sub setBalance(val As Integer)
@@ -1174,9 +979,9 @@ Public Class Form1
         Catch ex As Exception
             val = 0
         End Try
-        balance = val
+        ' balance = val
         If optionsMode Then OptionsForm.labelBalance.Text = "Balance: " & val
-        dll.iniWriteValue("Config", "balance", val, inipath)
+        saveSetting(SettingsIdentifier.BALANCE, val)
     End Sub
 
 
@@ -1190,7 +995,7 @@ Public Class Form1
 
     Public Sub showOptions(ByVal state As OptionsForm.optionState, Optional ByVal asDialog As Boolean = False, Optional title As String = "", Optional args() As String = Nothing)
         If Not optionsMode Then
-            If Not locked Then lockFormSwitch()
+            If Not formLocked Then lockFormSwitch()
             OptionsForm.Text = title
             OptionsForm.state = state
             OptionsForm.arguments = args
@@ -1248,19 +1053,9 @@ Public Class Form1
 
     End Function
 
-    Enum sortMode
-        REVERSE = 1
-        NAME = 0
-        DATE_ADDED = 2
-        TIME_LISTENED = 4
-        COUNT = 6
-        LENGTH = 8
-        POPULARITY = 10
-    End Enum
-
     Sub sortList(ByVal sortMode As sortMode, ByVal sender As Object)
-        If radio Then sortCheckedUpdate(Nothing)
-        If l2.Items.Count = 0 Or radio Then Exit Sub
+        If radioEnabled Then sortCheckedUpdate(Nothing)
+        If l2.Items.Count = 0 Or radioEnabled Then Exit Sub
         Dim tr As New List(Of Track)
         tr.AddRange(toList(l2.Items))
 
@@ -1334,25 +1129,25 @@ Public Class Form1
     Private Sub AbcToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles menuSortByName.Click
     End Sub
     Private Sub sortToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles menuSortByName.Click, menuSortByDateAdded.Click, menuSortByTimeListened.Click, menuSortByCount.Click, menuSortByLength.Click, menuSortByPopularity.Click
-        If searchState = eSearchState.NONE Then
-            If sender.Equals(menuSortByName) Then : trackSort = sortMode.NAME + trackSort Mod 2
-            ElseIf sender.Equals(menuSortByDateAdded) Then : trackSort = sortMode.DATE_ADDED + trackSort Mod 2
-            ElseIf sender.Equals(menuSortByTimeListened) Then : trackSort = sortMode.TIME_LISTENED + trackSort Mod 2
-            ElseIf sender.Equals(menuSortByCount) Then : trackSort = sortMode.COUNT + trackSort Mod 2
-            ElseIf sender.Equals(menuSortByLength) Then : trackSort = sortMode.LENGTH + trackSort Mod 2
-            ElseIf sender.Equals(menuSortByPopularity) Then : trackSort = sortMode.POPULARITY + trackSort Mod 2
+        If searchState = SearchState.NONE Then
+            If sender.Equals(menuSortByName) Then : setSetting(SettingsIdentifier.TRACK_SORT, sortMode.NAME + trackSort Mod 2)
+            ElseIf sender.Equals(menuSortByDateAdded) Then : setSetting(SettingsIdentifier.TRACK_SORT, sortMode.DATE_ADDED + trackSort Mod 2)
+            ElseIf sender.Equals(menuSortByTimeListened) Then : setSetting(SettingsIdentifier.TRACK_SORT, sortMode.TIME_LISTENED + trackSort Mod 2)
+            ElseIf sender.Equals(menuSortByCount) Then : setSetting(SettingsIdentifier.TRACK_SORT, sortMode.COUNT + trackSort Mod 2)
+            ElseIf sender.Equals(menuSortByLength) Then : setSetting(SettingsIdentifier.TRACK_SORT, sortMode.LENGTH + trackSort Mod 2)
+            ElseIf sender.Equals(menuSortByPopularity) Then : setSetting(SettingsIdentifier.TRACK_SORT, sortMode.POPULARITY + trackSort Mod 2)
             End If
             sortListAuto()
         End If
     End Sub
 
     Private Sub ReverseToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles menuSortByReverse.Click
-        If l2.Items.Count > 0 And Not radio And searchState = eSearchState.NONE Then
+        If l2.Items.Count > 0 And Not radioEnabled And searchState = SearchState.NONE Then
             sender.checked = Not sender.checked
             If sender.checked Then
-                trackSort += 1
+                setSetting(SettingsIdentifier.TRACK_SORT, getSetting(SettingsIdentifier.TRACK_SORT) + 1)
             Else
-                trackSort -= 1
+                setSetting(SettingsIdentifier.TRACK_SORT, getSetting(SettingsIdentifier.TRACK_SORT) - 1)
             End If
             sortListAuto()
         End If
@@ -1373,9 +1168,9 @@ Public Class Form1
         l2.Items.Clear()
         l2.Items.AddRange(tr.ToArray)
         l2.EndUpdate()
-        dll.iniWriteValue("Config", "trackSort", trackSort, inipath)
+        SettingsService.saveSetting(SettingsIdentifier.TRACK_SORT, trackSort)
         Dim sel As Track = l2.SelectedItem
-        If Not radio Then
+        If Not radioEnabled Then
             If l2_2.SelectedIndex = -1 Then
                 If Not last = Nothing AndAlso listContains(l2, last) >= 0 Then
                     l2.SelectedIndex = listContains(l2, last)
@@ -1401,7 +1196,7 @@ Public Class Form1
 
     Sub setlistselected(Optional ByVal l As ListBox = Nothing)
         If l Is Nothing Then l = getSelectedList()
-        If searchState = eSearchState.NONE Then
+        If searchState = SearchState.NONE Then
             l.SelectedIndex = -1
             Dim prioTrack As Track = IIf(currTrack = Nothing, last, currTrack)
             If Not prioTrack = Nothing Then
@@ -1453,8 +1248,8 @@ Public Class Form1
     End Function
 
     Private Sub list_MouseEnter(ByVal sender As Object, ByVal e As System.EventArgs) Handles l2.MouseEnter, l2_2.MouseEnter, tv.MouseEnter
-        If Not locked And searchState = eSearchState.NONE And Not tSearch.Focused Then
-            If Not searchState = eSearchState.NONE Or Not sender.Equals(tv) And Me.Focused Then sender.Focus()
+        If Not formLocked And searchState = SearchState.NONE And Not tSearch.Focused Then
+            If Not searchState = SearchState.NONE Or Not sender.Equals(tv) And Me.Focused Then sender.Focus()
         End If
     End Sub
 
@@ -1469,9 +1264,13 @@ Public Class Form1
         Next
     End Sub
 
-    Sub loadFont(control As Control, key As String, Optional defaultFont As Font = Nothing)
-        Dim raw As String = dll.iniReadValue("Config", key, "", inipath)
-        Dim vals() As String = raw.Split(";")
+    Sub loadFont(control As Control, key As SettingsIdentifier, Optional defaultFont As Font = Nothing)
+        Dim raw As String = SettingsService.loadSetting(key)
+        setFont(control, raw, defaultFont)
+    End Sub
+
+    Sub setFont(control As Control, fontString As String, Optional defaultFont As Font = Nothing)
+        Dim vals() As String = fontString.Split(";")
         Try
             Dim f As New Font(vals(0), CSng(vals(2)), DirectCast(CInt(vals(1)), FontStyle))
             control.Font = f
@@ -1484,11 +1283,12 @@ Public Class Form1
         End Try
     End Sub
 
+
     Private Sub lists_mouseWheel(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles l2.MouseWheel, l2_2.MouseWheel, tv.MouseWheel
         Dim senderControl As Control = CType(sender, Control)
         If Key.ctrlKey Then
-            Dim iniKey As String = "fontFolders"
-            If sender.Equals(l2) Or sender.Equals(l2_2) Then iniKey = "fontTracks"
+            Dim iniKey As SettingsIdentifier = SettingsIdentifier.FONT_FOLDERS
+            If sender.Equals(l2) Or sender.Equals(l2_2) Then iniKey = SettingsIdentifier.FONT_FOLDERS
             If senderControl.Font.Size >= 1 And senderControl.Font.Size <= 70 Then
                 If e.Delta > 0 Then
                     OptionsForm.saveFont(senderControl, New Font(senderControl.Font.FontFamily.Name, senderControl.Font.Size + IIf(senderControl.Font.Size < 70, 1, 0), senderControl.Font.Style), iniKey)
@@ -1517,7 +1317,7 @@ Public Class Form1
     End Sub
 
     Private Sub dd_MouseDown(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles l2.MouseDown, l2_2.MouseDown
-        If Not radio Then
+        If Not radioEnabled Then
             Dim cursorPoint = New Point(Cursor.Position.X - sender.PointToScreen(New Point(sender.Left, sender.Top)).X + sender.Left, Cursor.Position.Y - sender.PointToScreen(New Point(sender.Left, sender.Top)).Y + sender.top)
             Dim it As Integer = sender.IndexFromPoint(cursorPoint)
             dItem = Nothing
@@ -1711,7 +1511,7 @@ Public Class Form1
         If dragList Is Nothing Then tv_AfterSelectSUB()
     End Sub
     Sub tv_AfterSelectSUB()
-        If Not radio Then
+        If Not radioEnabled Then
             If Not IsNothing(tv.SelectedNode) Then
                 Dim curr As Folder = Folder.getSelectedFolder(tv)
                 If curr IsNot Nothing Then curr.invalidateFolderTracks(False, True)
@@ -1747,7 +1547,7 @@ Public Class Form1
         Dim l As ListBox = sender
         If TypeOf l.SelectedItem Is Track Or TypeOf l.SelectedItem Is Radio Then
             If Not l.SelectedIndex = -1 Then
-                If Not radio Then
+                If Not radioEnabled Then
                     Dim x As Integer = l.Width - 85
                     Dim y As Integer = Cursor.Position.Y - l.Top - Me.Top - 40
                     If l.Focused Then
@@ -1770,7 +1570,7 @@ Public Class Form1
                             ttShow(l.SelectedItem.dateString, l, x, y, 1500)
                         End If
                     End If
-                    If searchState = eSearchState.EMPTY Then cancelSearch(False)
+                    If searchState = SearchState.EMPTY Then cancelSearch(False)
                     If overlayModeContains(eOverlayMode.LYRICS) Then
                         LyricsForm.openLyrics(l.SelectedItem)
                     End If
@@ -1789,8 +1589,8 @@ Public Class Form1
 
     Private Sub l2_DoubleClick(ByVal sender As Object, ByVal e As System.EventArgs) Handles l2.DoubleClick
         If l2.SelectedIndex > -1 Then
-            If Not radio Then
-                If searchState > eSearchState.NONE Then
+            If Not radioEnabled Then
+                If searchState > SearchState.NONE Then
                     If TypeOf l2.SelectedItem Is Track Then
                         Dim match As Track = l2.SelectedItem
                         match.addToPlaylist()
@@ -1799,7 +1599,7 @@ Public Class Form1
                         Dim part As TrackPart = l2.SelectedItem
                         part.track.addToPlaylist()
                         part.track.play()
-                        trackLoop = loopMode.YES
+                        trackLoop = LoopMode.YES
                         loopVals(1) = part.fromSec
                         loopVals(2) = part.toSec
                     End If
@@ -1887,9 +1687,9 @@ Public Class Form1
         End Function
         Public Function dateCompare(ByVal x As Object, ByVal y As Object, ByVal col As Integer) As Integer
             Dim s1 As String = CType(x, ListViewItem).SubItems(col).Text
-            If s1 = "" Then s1 = Form1.dateLogStart
+            If s1 = "" Then s1 = dateLogStart
             Dim s2 As String = CType(y, ListViewItem).SubItems(col).Text
-            If s2 = "" Then s2 = Form1.dateLogStart
+            If s2 = "" Then s2 = dateLogStart
             Return CDate(s1).CompareTo(CDate(s2))
         End Function
 
@@ -1955,7 +1755,7 @@ Public Class Form1
 
         tv.EndUpdate()
 
-        last = Track.getTrack(dll.iniReadValue("last", "file", , inipath))
+        last = Track.getTrack(SettingsService.loadSetting(SettingsIdentifier.LAST_TRACK_FILE))
 
         If tv.Nodes(0).Nodes.Count > 0 Then
             Dim prioTrack As Track = IIf(currTrack = Nothing, last, currTrack)
@@ -1983,7 +1783,7 @@ Public Class Form1
         End If
         If Not IsNothing(tv.SelectedNode) Then tv.SelectedNode.EnsureVisible()
 
-        If Not radio Then
+        If Not radioEnabled Then
             If l2.Items.Count > 0 Then
                 Dim prioTrack As Track = IIf(currTrack = Nothing, last, currTrack)
                 If Not prioTrack = Nothing Then
@@ -2005,8 +1805,8 @@ Public Class Form1
         Dim rads As List(Of Radio) = MediaPlayer.Radio.getStations()
         If radioSort = 1 Then rads.Sort(Function(x, y) y.time.CompareTo(x.time))
         l2.Items.AddRange(rads.ToArray)
-        Dim wasRadioBefore As Boolean = radio And beforeIndex >= 0
-        radio = True
+        Dim wasRadioBefore As Boolean = radioEnabled And beforeIndex >= 0
+        setSetting(SettingsIdentifier.MUSIC_SOURCE, MusicSource.RADIO)
         If rads.Count > 0 Then l2.SelectedIndex = IIf(wasRadioBefore, beforeIndex, 0)
     End Sub
 
@@ -2027,7 +1827,7 @@ Public Class Form1
     End Sub
 
     Sub tv_refill(Optional selNodeString As String = Nothing)
-        If Not radio Then
+        If Not radioEnabled Then
             If Not l2.Items.Count = 0 And l2_2.Items.Count = 0 Then saveLastTrack(CType(getSelectedList.SelectedItem, Track).virtualPath)
             localfill(True, selNodeString)
         End If
@@ -2088,9 +1888,10 @@ Public Class Form1
 
     Private Sub GenreDistributionToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2ListTasksGenreDistributionToolStripMenuItem.Click
         Dim l As ListBox = getSelectedList()
-        If l.Items.Count > 0 And Not radio And searchState = eSearchState.NONE Then
-            Dim gsUpper() As String = dll.iniReadValue("Config", "Genres", , inipath).Split(";")
-            Dim gs() As String = dll.iniReadValue("Config", "Genres", , inipath).ToLower.Split(";")
+        If l.Items.Count > 0 And Not radioEnabled And searchState = SearchState.NONE Then
+            Dim genreRaw As String = SettingsService.getSetting(SettingsIdentifier.GENRES)
+            Dim gsUpper() As String = genreRaw.Split(";")
+            Dim gs() As String = genreRaw.ToLower.Split(";")
             l.SelectedItem.updateGenre()
             Dim g As Genre = l.SelectedItem.genre
             Dim str As String = "Track genre: " & vbNewLine & g.name & vbNewLine
@@ -2118,7 +1919,7 @@ Public Class Form1
 
 #Region "Item Tasks"
     Function removeItem(hotkeyTrigger As Boolean) As Boolean
-        If Not radio Then
+        If Not radioEnabled Then
             Dim l As ListBox = getSelectedList()
             If l IsNot Nothing Then
                 If Not hotkeyTrigger Or l.Focused Then
@@ -2181,7 +1982,7 @@ Public Class Form1
 
     Private Sub RemoveFromPlaylistToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles RemoveFromPlaylistToolStripMenuItem.Click
         Dim l As ListBox = getSelectedList()
-        If Not radio AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
+        If Not radioEnabled AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
             Dim track As Track = l.SelectedItem
             Dim fol As Folder = Folder.getFolder(track.path)
             If Not fol = Nothing Then
@@ -2196,7 +1997,7 @@ Public Class Form1
 
     Private Sub con2TrackTasksEditTrackParts_Click(sender As Object, e As EventArgs) Handles con2TrackTasksEditTrackParts.Click
         Dim l As ListBox = getSelectedList()
-        If Not radio AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
+        If Not radioEnabled AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
             Dim track As Track = l.SelectedItem
             openOverlay(eOverlayMode.PARTS)
             PartsForm.loadParts(track)
@@ -2204,7 +2005,7 @@ Public Class Form1
     End Sub
 
     Private Sub CopyStringToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2TrackTasksCopyName.Click
-        If Not radio Then
+        If Not radioEnabled Then
             Dim l As ListBox = getSelectedList()
             If l.SelectedItem IsNot Nothing Then
                 If TypeOf l.SelectedItem Is Track Or TypeOf l.SelectedItem Is TrackPart Then
@@ -2225,7 +2026,7 @@ Public Class Form1
         Else
             Return
         End If
-        If Not IsNothing(l) And Not radio Then
+        If Not IsNothing(l) And Not radioEnabled Then
             Folder.invalidateFolders(Folder.top)
             Track.invalidateTracks(True)
 
@@ -2249,8 +2050,8 @@ Public Class Form1
 
     Private Sub RefillToolStripMenuItem2_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2ListTasksRefill.Click
         If l2.SelectedIndex > -1 And getSelectedList() Is l2 Then
-            If Not radio Then
-                If searchState = eSearchState.NONE Then
+            If Not radioEnabled Then
+                If searchState = SearchState.NONE Then
                     l2.Items.Clear()
                     refill()
                 End If
@@ -2261,9 +2062,9 @@ Public Class Form1
     Private Sub ClearToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2ListTasksClear.Click
         Dim l As ListBox = getSelectedList()
         Dim ol As ListBox = getOtherList(l)
-        If Not radio Then
+        If Not radioEnabled Then
             If l Is l2 Then
-                If searchState > eSearchState.NONE Then cancelSearch(False)
+                If searchState > SearchState.NONE Then cancelSearch(False)
 
                 l.Items.Clear()
                 If Not last = Nothing Then
@@ -2284,7 +2085,7 @@ Public Class Form1
     End Sub
 
     Private Sub QueueInOrderToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2ListTasksQueueInOrder.Click
-        If radio Or getSelectedList() Is l2_2 Then Exit Sub
+        If radioEnabled Or getSelectedList() Is l2_2 Then Exit Sub
         For i = 0 To l2.Items.Count - 1
             If Not TypeOf l2.Items(i) Is Track Then Continue For
             Dim track As Track = l2.Items(i)
@@ -2303,7 +2104,7 @@ Public Class Form1
 
     Private Sub DeleteFILEToolStripMenuItem5_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2SourceTasksDelete.Click
         Dim l As ListBox = getSelectedList()
-        If Not radio And l IsNot Nothing And Not radio Then
+        If Not radioEnabled And l IsNot Nothing And Not radioEnabled Then
             Dim track As Track = CType(l.SelectedItem, Track)
             If track IsNot Nothing Then
                 If track.isVirtual Then
@@ -2329,7 +2130,7 @@ Public Class Form1
     End Sub
     Private Sub RenameToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2SourceTasksRename.Click
         Dim l As ListBox = getSelectedList()
-        If Not radio And l IsNot Nothing Then
+        If Not radioEnabled And l IsNot Nothing Then
             Dim str As Track = l.SelectedItem
             Folder.invalidateFolders(Folder.top)
             Track.invalidateTracks(True)
@@ -2369,13 +2170,13 @@ Public Class Form1
                             End If
                         End If
                     Next
-                    If dll.iniIsValidKey("Time", str.name, inipath) Then
-                        dll.iniWriteValue("Time", newName, dll.iniReadValue("Time", str.name, 0, inipath), inipath)
-                        dll.iniDeleteKey("Time", str.name, inipath)
+                    If dll.iniIsValidKey(IniSection.TRACKS_TIME, str.name, inipath) Then
+                        saveRawSetting(SettingsIdentifier.TRACKS_TIME, newName, loadRawSetting(SettingsIdentifier.TRACKS_TIME, str.name))
+                        dll.iniDeleteKey(IniSection.TRACKS_TIME, str.name, inipath)
                     End If
-                    If dll.iniIsValidKey("Tracks", str.name, inipath) Then
-                        dll.iniWriteValue("Tracks", newName, dll.iniReadValue("Tracks", str.name, 0, inipath), inipath)
-                        dll.iniDeleteKey("Tracks", str.name, inipath)
+                    If dll.iniIsValidKey(IniSection.TRACKS, str.name, inipath) Then
+                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, newName, loadRawSetting(SettingsIdentifier.TRACKS_COUNT, str.name))
+                        dll.iniDeleteKey(IniSection.TRACKS, str.name, inipath)
                     End If
 
 
@@ -2404,7 +2205,7 @@ Public Class Form1
 
     Private Sub ReplaceToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2SourceTasksReplace.Click
         Dim l As ListBox = getSelectedList()
-        If Not radio And l IsNot Nothing Then
+        If Not radioEnabled And l IsNot Nothing Then
             Dim tr As Track = l.SelectedItem
             Dim locs As List(Of Folder) = tr.getLocations(True)
             If locs.Count > 0 Then
@@ -2433,7 +2234,7 @@ Public Class Form1
 #End Region
 
     Private Sub TrackToQueue() 'handles toqueue command
-        If Not radio Then
+        If Not radioEnabled Then
             Dim l As ListBox = getSelectedList()
             If Not TypeOf l.SelectedItem Is Track Then Return
             Dim selTrack As Track = l.SelectedItem
@@ -2485,9 +2286,9 @@ Public Class Form1
     End Sub
 
 
-    Sub con2AddToPlaylist_Clicked(ByVal sender As System.Object, ByVal e As ToolStripItemClickedEventArgs)
+    Sub con2AddToPlaylist_Clicked(ByVal sender As System.Object, ByVal e As ToolStripItemClickedEventArgs) Handles con2AddToPlaylist.DropDownItemClicked
         con2.Hide()
-        If Not TypeOf getSelectedList().SelectedItem Is Track Then Return
+        If TypeOf getSelectedList().SelectedItem IsNot Track Then Return
         If e.ClickedItem.Text = "New Playlist..." Then
             Dim selNode As Folder = NodeSelectionForm.selectNode("Select playlist parent node")
             If selNode IsNot Nothing Then
@@ -2547,7 +2348,7 @@ Public Class Form1
     End Sub
 
     Sub searchStateUIUpdate()
-        If searchState = eSearchState.NONE Then
+        If searchState = SearchState.NONE Then
             tSearch.Text = "Search..."
             If l2.SelectedIndex = -1 And l2_2.SelectedIndex = -1 And dragList Is Nothing Then
                 labelCount.Text = ""
@@ -2557,14 +2358,14 @@ Public Class Form1
                 labelLength.Text = ""
                 labelPopularity.Text = ""
                 labelGenre.Text = ""
-                If Not radio And Not wmp.URL = "" Then setlistselected()
+                If Not radioEnabled And Not wmp.URL = "" Then setlistselected()
             End If
         End If
     End Sub
 
 
     Sub windowTextUpdate()
-        If Not radio And Not currTrack Is Nothing Then
+        If Not radioEnabled And Not currTrack Is Nothing Then
             Dim t As String = currTrack.name
             If currTrack.partsCount > 1 Then
                 If currTrackPart IsNot Nothing Then
@@ -2578,7 +2379,7 @@ Public Class Form1
                 t = "■ ⁯⁯⁯⁯⁯⁯" & t
             End If
             Me.Text = t
-        ElseIf radio Then
+        ElseIf radioEnabled Then
             If l2.SelectedItem IsNot Nothing Then Me.Text = IIf(wmp.playState = WMPPlayState.wmppsPlaying, "♫ ", "■ ") & l2.SelectedItem.name
         ElseIf wmp.URL = "" Then
             Text = ""
@@ -2586,7 +2387,7 @@ Public Class Form1
     End Sub
 
     Sub labelStatsUpdate(Optional ByVal l As ListBox = Nothing)
-        If radio Then
+        If radioEnabled Then
             If l Is Nothing Then
                 l = getSelectedList()
             End If
@@ -2684,7 +2485,7 @@ Public Class Form1
 
     Sub labelPartsLoopUpdate()
         Dim selList As ListBox = getSelectedList()
-        If selList IsNot Nothing And Not selList.SelectedItem Is Nothing And Not radio And selList.Items.Count > 0 And searchState = eSearchState.NONE And dragList Is Nothing Then
+        If selList IsNot Nothing And Not selList.SelectedItem Is Nothing And Not radioEnabled And selList.Items.Count > 0 And searchState = SearchState.NONE And dragList Is Nothing Then
             If Not currTrack = Nothing AndAlso currTrack.name = selList.SelectedItem.name Then
                 If currTrack.partsCount = 0 Then
                     currTrack.updateParts()
@@ -2692,13 +2493,13 @@ Public Class Form1
 1:              If currTrack.partsCount > 0 AndAlso currTrackPart IsNot Nothing Then labelPartsCount.Text = currTrackPart.id + 1 & " (" & currTrack.partsCount & ")"
                 Try
                     If currTrack.partsCount > 0 Then labelPartName.Text = currTrackPart.name
-                    If trackLoop = loopMode.NO Then
+                    If trackLoop = LoopMode.NO Then
                         If currTrack.partsCount > 0 Then
                             labelLoop.Text = currTrackPart.format
                         Else
                             labelLoop.Text = ""
                         End If
-                    ElseIf trackLoop = loopMode.INTERMEDIATE Then
+                    ElseIf trackLoop = LoopMode.INTERMEDIATE Then
                         labelLoop.Text = "[" & dll.secondsTo_ms_Format(Int(loopVals(1))) & " -"
                     Else
                         labelLoop.Text = "[" & dll.secondsTo_ms_Format(Int(loopVals(1))) & " - " & dll.secondsTo_ms_Format(Int(loopVals(2))) & "]"
@@ -2727,7 +2528,7 @@ Public Class Form1
     End Sub
 
     Private Sub setDate(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelDateAdded.Click, labelDateAdded2.Click, con2SourceTasksSetDate.Click
-        If Not radio And searchState = eSearchState.NONE Then
+        If Not radioEnabled And searchState = SearchState.NONE Then
             Dim l As ListBox = getSelectedList()
             If l IsNot Nothing AndAlso l.SelectedItem IsNot Nothing Then
                 l.SelectedItem.setDate()
@@ -2740,16 +2541,13 @@ Public Class Form1
     End Sub
 
     Private Sub labelPopularity_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelPopularity2.Click, labelPopularity.Click
-        If Not radio And searchState = eSearchState.NONE Then
+        If Not radioEnabled And searchState = SearchState.NONE Then
             Try
-                Dim fi As New FileInfo(My.Application.Info.DirectoryPath & "\" & My.Application.Info.AssemblyName & ".exe")
-                Dim defVal As String = fi.LastWriteTime.ToShortDateString()
-                Dim loggedVal As String = dll.iniReadValue("Config", "dateLogStart", defVal, inipath)
+                Dim loggedVal As String = SettingsService.loadSetting(SettingsIdentifier.DATE_LOG_START)
                 Dim logStart As Date = CDate(loggedVal)
                 Dim dt As Date = InputBox("Default start date for popularity calculation." _
                                             & vbNewLine & "(If no date of a track's aquirement is given)", , logStart.ToShortDateString)
-                dateLogStart = dt.ToShortDateString()
-                dll.iniWriteValue("Config", "dateLogStart", dt.ToShortDateString(), inipath)
+                saveSetting(SettingsIdentifier.DATE_LOG_START, dt)
             Catch ex As Exception
                 Return
             End Try
@@ -2758,12 +2556,10 @@ Public Class Form1
 
 
     Private Sub Label_random(ByVal sender As System.Object, ByVal e As System.EventArgs)
-        mode = playMode.RANDOM
-        dll.iniWriteValue("Config", "playmode", mode, inipath)
+        saveSetting(SettingsIdentifier.PLAY_MODE, PlayMode.RANDOM)
     End Sub
     Private Sub Label_repeat(ByVal sender As System.Object, ByVal e As System.EventArgs)
-        mode = playMode.REPEAT
-        dll.iniWriteValue("Config", "playmode", mode, inipath)
+        saveSetting(SettingsIdentifier.PLAY_MODE, PlayMode.REPEAT)
     End Sub
     Private Sub Label_lastfile()
         Dim flag As Boolean = False
@@ -2806,7 +2602,7 @@ Public Class Form1
     End Sub
     Private Sub Label18_PARTS(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelPartsCount.Click
         Dim l As ListBox = getSelectedList()
-        If Not radio AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
+        If Not radioEnabled AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
             Dim track As Track = l.SelectedItem
             openOverlay(eOverlayMode.PARTS)
             PartsForm.loadParts(track)
@@ -2814,22 +2610,22 @@ Public Class Form1
     End Sub
 
     Private Sub Label9_COUNT(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelCount.Click
-        If getSelectedList().SelectedItem IsNot Nothing And searchState = eSearchState.NONE Then
+        If getSelectedList().SelectedItem IsNot Nothing And searchState = SearchState.NONE Then
             Dim a As String = InputBox("Type in new count", , labelCount.Text)
             If Not a = "" Then
-                dll.iniWriteValue("Tracks", getSelectedList.SelectedItem.name, a, inipath)
+                saveRawSetting(SettingsIdentifier.TRACKS_COUNT, getSelectedList.SelectedItem.name, a)
                 labelStatsUpdate(getSelectedList)
             End If
         End If
     End Sub
 
     Private Sub label15_RADIO_TIME(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelTimeListened.Click
-        If radio Then
+        If radioEnabled Then
             If l2.SelectedIndex > -1 Then
                 Dim a As String = InputBox("Type in new time", , labelTimeListened.Text)
                 If Not a = "" Then
                     If dll.dhmsStringToSeconds(a) > -1 Then
-                        dll.iniWriteValue("RadioTime", getSelectedList.SelectedItem.name, dll.dhmsStringToSeconds(a), inipath)
+                        saveRawSetting(SettingsIdentifier.RADIO_TIME, getSelectedList.SelectedItem.name, dll.dhmsStringToSeconds(a))
                         l2.SelectedItem.update()
                         labelTimeListened.Text = dll.SecondsTodhmsString(l2.SelectedItem.time)
                     Else
@@ -2842,13 +2638,13 @@ Public Class Form1
 
     Private Sub Label25_A_B(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelLoop.Click
         Dim val As String = ""
-        If trackLoop = loopMode.INTERMEDIATE Then
+        If trackLoop = LoopMode.INTERMEDIATE Then
             val = InputBox("From:", , dll.secondsTo_ms_Format(Int(loopVals(1))))
             If val = "" Then
                 resetLoop()
             Else : loopVals(1) = dll.minFormatToSec(val)
             End If
-        ElseIf trackLoop = loopMode.YES Then
+        ElseIf trackLoop = LoopMode.YES Then
             val = InputBox("From:", , dll.secondsTo_ms_Format(Int(loopVals(1))))
             If val = "" Then
                 resetLoop() : Exit Sub
@@ -2865,7 +2661,7 @@ Public Class Form1
     Public Sub setLoop(fromTime As Integer, toTime As Integer)
         loopVals(1) = fromTime
         loopVals(2) = toTime
-        trackLoop = loopMode.YES
+        trackLoop = LoopMode.YES
     End Sub
 
     Private Sub Label16_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelPartName.Click
@@ -2881,19 +2677,29 @@ Public Class Form1
     'End Sub
 
     Private Sub picRepeat_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles picRepeat.Click
-        changePlayMode(playMode.REPEAT)
+        changePlayMode(PlayMode.REPEAT)
     End Sub
     Private Sub picRandom_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles picRandom.Click
-        changePlayMode(playMode.RANDOM)
+        changePlayMode(PlayMode.RANDOM)
     End Sub
 
-    Sub changePlayMode(toMode As playMode)
-        dll.iniWriteValue("Config", "playmode", toMode, inipath)
-        mode = toMode
-        If toMode = playMode.REPEAT Then
+    Sub changePlayMode(toMode As PlayMode)
+        saveSetting(SettingsIdentifier.PLAY_MODE, toMode)
+        If toMode = PlayMode.REPEAT Then
             picRepeat.BackgroundImage = My.Resources.rep2
             picRandom.BackgroundImage = My.Resources.invshuffle
-        ElseIf toMode = playMode.RANDOM Then
+        ElseIf toMode = PlayMode.RANDOM Then
+            picRepeat.BackgroundImage = My.Resources.invrep2
+            picRandom.BackgroundImage = My.Resources.shuffle
+        End If
+    End Sub
+
+    Sub updatePlayMode()
+        Dim currMode As PlayMode = getSetting(SettingsIdentifier.PLAY_MODE)
+        If currMode = PlayMode.REPEAT Then
+            picRepeat.BackgroundImage = My.Resources.rep2
+            picRandom.BackgroundImage = My.Resources.invshuffle
+        ElseIf currMode = PlayMode.RANDOM Then
             picRepeat.BackgroundImage = My.Resources.invrep2
             picRandom.BackgroundImage = My.Resources.shuffle
         End If
@@ -2951,7 +2757,15 @@ Public Class Form1
         ' wmp.Location = New Point(0, 50)
         '  wmp.Size = New Size(Me.Width - 15, Me.Height - 80)
         '   wmp.BringToFront()
-
+        If Me.WindowState = FormWindowState.Minimized Then
+            'If Not showMinimizedInTaskbar Then
+            iconTray.Visible = True
+                Me.Hide()
+                ' End If
+            Else
+            iconTray.Visible = False
+            '   If firstLoad Then resizeUpdate()
+        End If
     End Sub
     Private Sub Form1_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Resize
         formResize()
@@ -2962,7 +2776,7 @@ Public Class Form1
 #Region "wmp functions"
 
     Public Sub wmpstart(ByVal track As Track)
-        If Not radio And Not track = Nothing Then
+        If Not radioEnabled And Not track = Nothing Then
             If File.Exists(track.fullPath) Then
                 setPlayRate()
                 wmp.URL = track.fullPath
@@ -2974,13 +2788,13 @@ Public Class Form1
         End If
     End Sub
     Public Sub wmpstart(ByVal rad As Radio)
-        If radio And searchState = eSearchState.NONE And rad IsNot Nothing Then
+        If radioEnabled And searchState = SearchState.NONE And rad IsNot Nothing Then
             wmp.URL = rad.url
             firstStart()
         End If
     End Sub
     Private Sub wmpstartURL(ByVal url As String)
-        If searchState = eSearchState.NONE Then
+        If searchState = SearchState.NONE Then
             resetLoop()
             setPlayRate()
             wmp.URL = url
@@ -2989,15 +2803,23 @@ Public Class Form1
     End Sub
 
     Sub firstStart()
-        If firstPlayStart = firstStartState.INIT Then
-            firstPlayStart = firstStartState.STARTING
-            If dll.iniReadValue("Config", "ftpAutoUpdate", "0", inipath) = "1" Then
+        If firstPlayStart = FirstStartState.INIT Then
+            firstPlayStart = FirstStartState.STARTING
+            If SettingsService.loadSetting(SettingsIdentifier.FTP_AUTO_UPDATE) Then
                 dll.checkPlayerUpdate(dll.ftpCred, True)
             End If
         End If
     End Sub
-    Public Sub changeSourceMode(ByVal mode As Integer)
-        If Not searchState = eSearchState.NONE Then cancelSearch(False)
+
+    Public Sub switchSourceMode()
+        If radioEnabled Then
+            changeSourceMode(MusicSource.LOCAL)
+        Else
+            changeSourceMode(MusicSource.RADIO)
+        End If
+    End Sub
+    Public Sub changeSourceMode(ByVal mode As MusicSource)
+        If Not searchState = SearchState.NONE Then cancelSearch(False)
         If mode = 0 Then
             tv.Enabled = True
             l2_2.Enabled = True
@@ -3005,9 +2827,9 @@ Public Class Form1
             menuSortBy.Enabled = True
             menuLyrics.Enabled = True
             menuStatistics.Enabled = True
-            If radio Then
+            If radioEnabled Then
                 saveRadioTime()
-                radio = False
+                setSetting(SettingsIdentifier.MUSIC_SOURCE, MusicSource.LOCAL)
                 l2.Items.Clear()
                 localfill(False)
                 sortListAuto()
@@ -3027,7 +2849,7 @@ Public Class Form1
                 End If
             End If
         Else
-            If radio Then
+            If radioEnabled Then
                 saveRadioTime()
             End If
             resetLoop()
@@ -3044,7 +2866,7 @@ Public Class Form1
                 wmpstart(l2.SelectedItem)
             End If
         End If
-        dll.iniWriteValue("Config", "radio", mode, inipath)
+        saveSetting(SettingsIdentifier.MUSIC_SOURCE, mode)
         keydelay()
 
     End Sub
@@ -3052,11 +2874,11 @@ Public Class Form1
 
 #Region "Track Parts"
     Sub switchpart(ByVal switchdir As Integer) 'dir 2-forward,1-back
-        If Not radio Then
+        If Not radioEnabled Then
             currTrack.currPart = currTrack.getCurrentPart()
             If currTrackPart IsNot Nothing Then
                 If switchdir = 1 Then
-                    If trackLoop = loopMode.YES Then
+                    If trackLoop = LoopMode.YES Then
                         currTrack.prevPart()
                     End If
                 Else
@@ -3064,7 +2886,7 @@ Public Class Form1
                 End If
                 loopVals(1) = currTrackPart.fromSec
                 loopVals(2) = currTrackPart.toSec
-                trackLoop = loopMode.YES
+                trackLoop = LoopMode.YES
                 wmp.Ctlcontrols.currentPosition = loopVals(1)
                 labelStatsUpdate()
                 labelLoop.Cursor = Cursors.Hand
@@ -3078,7 +2900,7 @@ Public Class Form1
 
 
     Sub resetLoop()
-        trackLoop = loopMode.NO
+        trackLoop = LoopMode.NO
         loopVals(1) = 0
         loopVals(2) = 0
         labelLoop.Cursor = Cursors.Default
@@ -3119,7 +2941,7 @@ Public Class Form1
 
     Public Sub playNextTrack()
         If currTrack Is Nothing Or currTrack IsNot Nothing AndAlso currTrack.getPlaylistIndex() = playlist.Count - 1 Then
-            If l2.Items.Count = 0 Then refill(Not mode = playMode.REPEAT)
+            If l2.Items.Count = 0 Then refill(Not playMode = PlayMode.REPEAT)
             If l2.Items.Count > 0 Then
 
                 Dim nextTrack As Track
@@ -3225,18 +3047,13 @@ Public Class Form1
         Cursor = Cursors.Default
     End Sub
 
-    Enum eSearchState
-        NONE
-        INIT
-        EMPTY
-        SEARCHING
-    End Enum
+
 
     Private Sub t2_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles tSearch.Click
-        If Not optionsMode And Not radio Then
-            If searchState = eSearchState.NONE Then
+        If Not optionsMode And Not radioEnabled Then
+            If searchState = SearchState.NONE Then
                 initSearch()
-            ElseIf searchState = eSearchState.INIT Then
+            ElseIf searchState = SearchState.INIT Then
                 tSearch.Text = ""
             End If
 
@@ -3256,7 +3073,7 @@ Public Class Form1
         checkSeachAllFolders.Visible = True : checkSeachAllFolders.Text = "Search All Folders"
         checkSearchParts.Visible = True : checkSearchParts.Text = "Search Track Parts"
         cancelLabel.Visible = True : picCancel.Visible = True : cancelLabel.Text = "Cancel Search"
-        searchState = eSearchState.INIT
+        searchState = SearchState.INIT
 
         If searchParts Then
             For i = 0 To l2.Items.Count - 1
@@ -3271,12 +3088,12 @@ Public Class Form1
     End Sub
 
     Sub cancelSearch(Optional refillList As Boolean = True)
-        If Not searchState = eSearchState.NONE Then
+        If Not searchState = SearchState.NONE Then
             tSearch.Text = "Search..."
             checkSeachAllFolders.Visible = False
             checkSearchParts.Visible = False
             cancelLabel.Visible = False : picCancel.Visible = False
-            searchState = eSearchState.NONE
+            searchState = SearchState.NONE
 
             If refillList Then
                 l2.Items.Clear()
@@ -3321,7 +3138,7 @@ Public Class Form1
 
         ElseIf e.KeyCode = Keys.Enter Then
 
-            If searchState = eSearchState.SEARCHING Then
+            If searchState = SearchState.SEARCHING Then
                 Dim match As Track = Nothing
                 If l2.Items.Count > 0 Then
                     If TypeOf l2.Items(1) Is Track Then
@@ -3340,18 +3157,18 @@ Public Class Form1
     End Sub
 
     Private Sub t2_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles tSearch.TextChanged
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", "False", inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         tSearch.ForeColor = IIf(tSearch.Text = "Search...", Color.DimGray, IIf(inverted, Color.White, Color.Black))
 
         If tSearch.Text = "" Then
-            If Not searchState = eSearchState.INIT Then
-                searchState = eSearchState.EMPTY
+            If Not searchState = SearchState.INIT Then
+                searchState = SearchState.EMPTY
                 l2.Items.Clear()
                 refill()
             End If
 
         ElseIf Not tSearch.Text = "Search..." Then
-            searchState = eSearchState.SEARCHING
+            searchState = SearchState.SEARCHING
             tSearch.Text = tSearch.Text.ToLower
             searchFill()
         End If
@@ -3359,16 +3176,14 @@ Public Class Form1
 
 
     Private Sub checkSeachAllFolders_CheckedChanged(sender As Object, e As EventArgs) Handles checkSeachAllFolders.CheckedChanged
-        searchAllFolders = checkSeachAllFolders.Checked
-        If searchState = eSearchState.SEARCHING Then searchFill()
+        saveSetting(SettingsIdentifier.SEARCH_ALL_FOLDERS, checkSeachAllFolders.Checked)
+        If searchState = SearchState.SEARCHING Then searchFill()
         tSearch.Focus()
-        dll.iniWriteValue("Config", "searchAllFolders", Convert.ToInt32(searchAllFolders), inipath)
+
     End Sub
 
     Private Sub checkSearchParts_CheckedChanged(sender As Object, e As EventArgs) Handles checkSearchParts.CheckedChanged
-        searchParts = checkSearchParts.Checked
-        dll.iniWriteValue("Config", "searchParts", Convert.ToInt32(searchParts), inipath)
-
+        saveSetting(SettingsIdentifier.SEARCH_PARTS, checkSearchParts.Checked)
         If searchParts Then
             For i = 0 To l2.Items.Count - 1
                 If TypeOf l2.Items(i) Is Track Then
@@ -3376,7 +3191,7 @@ Public Class Form1
                 End If
             Next
         End If
-        If searchState = eSearchState.SEARCHING Then searchFill()
+        If searchState = SearchState.SEARCHING Then searchFill()
         tSearch.Focus()
     End Sub
     Private Sub checkSearchParts_VisibleChanged(sender As Object, e As EventArgs) Handles checkSearchParts.VisibleChanged, checkSeachAllFolders.VisibleChanged
@@ -3391,37 +3206,35 @@ Public Class Form1
 #Region "Meta Stats"
     Function isEncoded() As Boolean
         If Not dll.iniIsValidSection("Musik", logpath) Then
-            encodebln = True
             Return True
         End If
-        encodebln = False
         Return False
     End Function
 
     Sub savePaths()
-        SaveSetting(My.Application.Info.ProductName, "Config", "inipath", inipath)
-        dll.iniWriteValue("Config", "path", path, inipath)
-        dll.iniWriteValue("Config", "playlistpath", playlistPath, inipath)
-        dll.iniWriteValue("Config", "logPath", logpath, inipath)
-        dll.iniWriteValue("Config", "lyrPath", lyrpath, inipath)
-        dll.iniWriteValue("Config", "ftpPath", ftpPath, inipath)
+        saveSetting(SettingsIdentifier.INIPATH, inipath)
+        saveSetting(SettingsIdentifier.PATH, path)
+        saveSetting(SettingsIdentifier.PLAYLISTPATH, playlistPath)
+        saveSetting(SettingsIdentifier.LOGPATH, logpath)
+        saveSetting(SettingsIdentifier.LYRPATH, lyrpath)
+        saveSetting(SettingsIdentifier.FTPPATH, ftpPath)
     End Sub
 
     Public Sub saveLastTrack(Optional val As String = "")
-        dll.iniWriteValue("last", "file", IIf(val = "", last.virtualPath, val), inipath)
+        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_FILE, IIf(val = "", last.virtualPath, val))
     End Sub
 
     Public Sub saveCurrPlaylistHistory()
         For Each t As Track In playlist
-            dll.iniWriteValue("history", t.name, t.fullPath, inipath)
+            SettingsService.saveRawSetting(SettingsIdentifier.PLAYLIST_HISTORY, t.name, t.fullPath)
         Next
     End Sub
 
     Function loaddates() As Boolean
         If datesInitiallyLoaded Then Return True
         If Not File.Exists(logpath) Then
-            If Not dll.iniIsValidKey("Config", "logPath", inipath) Then
-                dll.iniWriteValue("Config", "logPath", "", inipath)
+            If Not SettingsService.exists(SettingsIdentifier.LOGPATH) Then
+                SettingsService.saveSetting(SettingsIdentifier.LOGPATH, "")
                 If MsgBox("No file for track dates found. Assign now?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
                     showOptions(OptionsForm.optionState.PATHS, True)
                     GoTo 1
@@ -3490,13 +3303,13 @@ Public Class Form1
     End Function
 
     Sub saveRadioTime()
-        If l2.Items.Count > 0 And radio Then
+        If l2.Items.Count > 0 And radioEnabled Then
             For i = 0 To l2.Items.Count - 1
                 l2.Items(i).update()
                 Dim newVal As Integer = l2.Items(i).time + l2.Items(i).timeTemp
                 l2.Items(i).time = newVal
                 l2.Items(i).timetemp = 0
-                dll.iniWriteValue("RadioTime", l2.Items(i).name, newVal, inipath)
+                saveRawSetting(SettingsIdentifier.RADIO_TIME, l2.Items(i).name, newVal)
             Next
         End If
     End Sub
@@ -3576,7 +3389,7 @@ Public Class Form1
             Dim res As Tcp.ListenResult = Await remoteTcp.listen(0)
 
             If res.resultCode = 1 Then
-                If dll.iniReadValue("Config", "remoteBlockExtIps", 0, inipath) = 0 Then
+                If Not SettingsService.getSetting(SettingsIdentifier.REMOTE_BLOCK_EXT_IPS) Then
                     OptionsForm.SendToBack()
                     If MsgBox("External device [" & remoteTcp.getIp(res.client) & "] requesting remote access." & vbNewLine & "Accept connection?", MsgBoxStyle.YesNo + MsgBoxStyle.Information) = MsgBoxResult.No Then
                         remoteTcp.stopConnection(remoteTcp.getIp(res.client))
@@ -3731,13 +3544,13 @@ Public Class Form1
                     Case "shut"
                         Shell("shutdown -s -t 0")
                     Case "lmouse"
-                        lMouseClick()
+                        Utils.lMouseClick()
                     Case "lmouse2"
-                        lMouseClick(2)
+                        Utils.lMouseClick(2)
                     Case "rmouse"
-                        rMouseClick()
+                        Utils.rMouseClick()
                     Case "mmouse"
-                        mMouseClick()
+                        Utils.mMouseClick()
                     Case "sysvol_down"
                         SysVol.system_volume_down()
                         If lastTCPCommand = comm Then SysVol.system_volume_down()
@@ -3755,7 +3568,7 @@ Public Class Form1
                             Cursor.Position = New Point(Cursor.Position.X - maList(i)(0), Cursor.Position.Y - maList(i)(1))
                         Next
                         For i = 0 To scList.Count - 1
-                            mouse_event(MOUSEEVENTF_WHEELROTATE, 0, 0, scList(i), 0)
+                            Utils.mouse_event(Utils.MOUSEEVENTF_WHEELROTATE, 0, 0, scList(i), 0)
                         Next
 
                         If comm.StartsWith("magnify_") Then
@@ -3763,7 +3576,7 @@ Public Class Form1
                             If zoom > 100 Then
                                 If Not isProcessAlive("magnify") Then Process.Start("magnify") 'Shell("magnify")
                             Else
-                                killProc("magnify")
+                                Utils.killProc("magnify")
                             End If
                             My.Computer.Registry.SetValue("HKEY_CURRENT_USER\Software\Microsoft\ScreenMagnifier", "Magnification", zoom)
 
@@ -3814,7 +3627,7 @@ Public Class Form1
                             End If
                         ElseIf comm.StartsWith("req") Then
                             If comm.StartsWith("reql2") Then
-                                If Not radio Then
+                                If Not radioEnabled Then
                                     Dim currFolder As Folder
                                     Dim conNode() As TreeNode = tv.Nodes.Find(Folder.top.name & "\" & comm.Substring(5), True)
                                     If conNode.Length > 0 Then
@@ -3849,7 +3662,7 @@ Public Class Form1
                                     connection.send("ansl2" & sendS & "*")
                                 End If
                             ElseIf comm.StartsWith("reql3") Then
-                                If l2_2.Items.Count = 0 Or radio Then
+                                If l2_2.Items.Count = 0 Or radioEnabled Then
                                     connection.send("ansl3*")
                                 Else
                                     Dim sendS As String = ""
@@ -3872,7 +3685,7 @@ Public Class Form1
                                     End If
                                 End If
                             ElseIf comm.StartsWith("reqtv") Then
-                                If Not radio Then
+                                If Not radioEnabled Then
                                     Dim sendS As String = "Everything"
                                     Dim sendCurr As Integer = 0
                                     For Each g As Genre In Genre.genres
@@ -3893,7 +3706,7 @@ Public Class Form1
                                     sendS &= currTrack.name & vbLf & currTrack.count & vbLf &
                                                                  CInt(currTrack.length) & vbLf & currTrack.added.ToShortDateString
                                 Else
-                                    If radio And wmp.playState = WMPPlayState.wmppsPlaying Then
+                                    If radioEnabled And wmp.playState = WMPPlayState.wmppsPlaying Then
                                         sendS &= l2.SelectedItem.name & vbLf & "0" & vbLf & "0" & vbLf & "0"
                                     Else
                                         sendS &= "" & vbLf & "0" & vbLf & "0" & vbLf & "0"
@@ -3901,9 +3714,11 @@ Public Class Form1
                                 End If
                                 connection.send("anslb" & sendS)
                             End If
+                        ElseIf comm.StartsWith("currwindow") Then
+                            connection.send("anscurrwindow" & KeyloggerModule.getWindowTitle())
                         ElseIf comm.StartsWith("pll2") Or comm.StartsWith("pll3") Then
                             Dim trName As String = comm.Substring(4)
-                            If radio Then
+                            If radioEnabled Then
                                 For i = 0 To l2.Items.Count - 1
                                     If l2.Items(i).name = trName Then
                                         l2.Items(i).play()
@@ -3915,13 +3730,13 @@ Public Class Form1
                                     tr.play()
                                 End If
                             End If
-                        ElseIf comm.StartsWith("addd_next") And Not radio Then
+                        ElseIf comm.StartsWith("addd_next") And Not radioEnabled Then
                             Dim trString As String = comm.Substring(9)
                             Dim tr As Track = Track.getFirstTrack(trString)
                             If tr IsNot Nothing Then
                                 tr.playNext()
                             End If
-                        ElseIf comm.StartsWith("add_queue") And Not radio Then
+                        ElseIf comm.StartsWith("add_queue") And Not radioEnabled Then
                             Dim trString As String = comm.Substring(9)
                             Dim tr As Track = Track.getFirstTrack(trString)
                             If tr IsNot Nothing Then
@@ -3941,7 +3756,7 @@ Public Class Form1
                             SendKeys.Send(comm.Substring(3))
                         Else
                             If maList.Count = 0 And scList.Count = 0 Then
-                                If dll.iniReadValue("Config", "remoteBlockMEssages", 0, inipath) = 0 Then
+                                If SettingsService.loadSetting(SettingsIdentifier.REMOTE_BLOCK_MESSAGES) = 0 Then
                                     If MsgBox(remoteTcp.getIp(connection.client) & " at " & Now.ToShortTimeString & " (" & k + 1 & "/" & fullSplit.Length & "):" & vbNewLine & comm, MsgBoxStyle.OkCancel) = MsgBoxResult.Cancel Then
                                         Exit For
                                     End If
@@ -3996,151 +3811,10 @@ Public Class Form1
 #End Region
 
 
-#Region "Player Update"
-    Sub install()
-        killProc("mp3player", True)
-        Dim currPath As String = My.Application.Info.DirectoryPath
-        Dim copyPath As String = ""
-        For i = 1 To My.Application.CommandLineArgs.Count - 1
-            copyPath &= My.Application.CommandLineArgs(i) & IIf(i = My.Application.CommandLineArgs.Count - 1, "", " ")
-        Next
-        MsgBox("Starting Installation...")
-1:      Dim fils() As String = Nothing
-        Try
-            Dim sr As New StreamReader(currPath.Substring(0, currPath.LastIndexOf("\")) & "\releases")
-            fils = sr.ReadToEnd().Split(";")
-            sr.Close()
-            For i = 0 To fils.Length - 1
-                fils(i) = fils(i).Replace(";", "")
-            Next
-        Catch ex As Exception
-            If MsgBox("Reading release manifest failed." & vbNewLine & vbNewLine &
-                      currPath.Substring(0, currPath.LastIndexOf("\")) & "\releases" &
-                      vbNewLine & vbNewLine & "Try again?", MsgBoxStyle.YesNo + MsgBoxStyle.Exclamation) = MsgBoxResult.Yes Then
-                GoTo 1
-            Else
-                Environment.Exit(0)
-            End If
-        End Try
-
-        If fils IsNot Nothing Then
-            Dim archiveEntries As New List(Of List(Of ZipArchiveEntry))
-            For i = 0 To fils.Length - 1
-                If CStr(currPath & "\" & fils(i)).EndsWith(".zip") Then
-                    archiveEntries.Add(getArchiveEntries(currPath & "\" & fils(i)))
-                End If
-            Next
-
-            Dim fileList As New List(Of String)
-            For Each archive In archiveEntries
-                For Each entry In archive
-                    fileList.Add(entry.FullName)
-                Next
-            Next
-
-            For Each fil As String In fileList
-                File.Delete(copyPath & "\" & fil)
-                File.Copy(currPath & "\" & fil, copyPath & "\" & fil)
-            Next
-
-            Try
-                Dim wr As New StreamWriter(copyPath & "\version", False)
-                wr.Write(currPath.Substring(currPath.LastIndexOf("\") + 8))
-                wr.Close()
-            Catch ex As Exception
-            End Try
-            Process.Start(copyPath & "\mp3player.exe")
-            Environment.Exit(0)
-        Else
-            MsgBox("Release manifest is corrupted.")
-        End If
-
-    End Sub
-
-
-    Function createArchive(destination As String, sourceDirectory As String) As Boolean
-        If sourceDirectory = "" OrElse Not IO.Directory.Exists(sourceDirectory) Then
-            IO.File.Create(destination).Close()
-        Else
-            ZipFile.CreateFromDirectory(sourceDirectory, destination)
-        End If
-        Return True
-    End Function
-
-    Function addToArchive(archivePath As String, filePath As String, Optional mode As CompressionLevel = CompressionLevel.Fastest) As Boolean
-        Try
-            Using archive As ZipArchive = ZipFile.Open(archivePath, ZipArchiveMode.Update)
-                archive.CreateEntryFromFile(filePath, filePath.Substring(filePath.LastIndexOf("\") + 1), mode)
-            End Using
-        Catch ex As Exception
-            Return False
-        End Try
-        Return True
-    End Function
-
-    Function extractArchive(archivePath As String, destination As String)
-        ZipFile.ExtractToDirectory(archivePath, destination)
-        Return True
-    End Function
-
-    Function getArchiveEntries(archivePath As String) As List(Of ZipArchiveEntry)
-        Dim archive As ZipArchive = ZipFile.Open(archivePath, ZipArchiveMode.Read)
-        Dim res As New List(Of ZipArchiveEntry)
-        For Each entry As ZipArchiveEntry In archive.Entries
-            res.Add(entry)
-        Next
-        Return res
-    End Function
-
-#End Region
-
 
 #Region "Gadget Helper"
-    Sub clickGadgetHandler()
 
-        If autoClicker Then
-            If Key.keyList(Key.keyName.Clicker_Off).pressed Then
-                clickerTimer.Stop()
-            End If
-        End If
 
-        If clickCounter Then
-            If Not GetAsyncKeyState(1) = 0 AndAlso Not keydelayt.Enabled Then
-                If downl = False Then
-                    downl = True
-                    cll += 1
-                End If
-            Else : downl = False
-            End If
-            If Not GetAsyncKeyState(2) = 0 AndAlso Not keydelayt.Enabled Then
-                If downr = False Then
-                    downr = True
-                    clr += 1
-                End If
-            Else : downr = False
-            End If
-            If Not GetAsyncKeyState(4) = 0 AndAlso Not keydelayt.Enabled Then
-                If downm = False Then
-                    downm = True
-                    clm += 1
-                End If
-            Else : downm = False
-            End If
-        End If
-    End Sub
-
-    Public Sub lMouseClick(Optional ByVal times As Integer = 1)
-        For i = 1 To times
-            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0) : mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
-        Next
-
-    End Sub
-    Public Sub rMouseClick()
-        mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0) : mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
-    End Sub
-    Public Sub mMouseClick()
-        mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0) : mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0)
-    End Sub
 #End Region
 
 #Region "System Functions"
@@ -4186,16 +3860,7 @@ Public Class Form1
         Return False
     End Function
 
-    Sub killProc(ByVal name As String, Optional excludeOwn As Boolean = False)
-        Try
-            For Each p As Process In Process.GetProcessesByName(name)
-                If Not p.Id = Process.GetCurrentProcess().Id Or Not excludeOwn Then
-                    p.Kill()
-                End If
-            Next
-        Catch ex As Exception
-        End Try
-    End Sub
+
 
     Function getAudioFiles(ByVal path As String) As String()
         Dim restr() As String = Nothing
@@ -4230,7 +3895,6 @@ Public Class Form1
                     initDir = initDir.Substring(0, initDir.LastIndexOf("\"))
                 Loop Until initDir.Count(Function(c) c = "\") <= 1 Or IO.Directory.Exists(initDir)
                 op.InitialDirectory = initDir
-                ' op.FileName = def.Substring(def.LastIndexOf("\") + 1)
             Catch ex As Exception
             End Try
         End If
@@ -4332,12 +3996,13 @@ Public Class Form1
             Dim comm As String = cds.lpData.Substring(0, 2)
             Dim data As String = cds.lpData.Substring(2)
             If comm = "ms" Then
-                If radio Then changeSourceMode(0)
+                If radioEnabled Then changeSourceMode(0)
                 initSearch()
                 keyExecute(Key.keyName.Restore_Window)
                 tSearch.Text = data
             ElseIf comm = "cm" Then
-                cursorMoverIncr = data
+                setSetting(SettingsIdentifier.CURSOR_MOVER_INCR, CInt(data))
+                ' cursorMoverIncr = data
             End If
         Else
             MyBase.WndProc(m)
@@ -4348,18 +4013,23 @@ Public Class Form1
 
 
     Private Sub Form1_LocationChanged(sender As Object, e As EventArgs) Handles Me.LocationChanged
-        saveWinPos()
+        If SettingsService.settingsInitialized Then
+            saveWinPos()
+        End If
     End Sub
 
 
     Private Sub Form1_SizeChanged(sender As Object, e As EventArgs) Handles Me.SizeChanged
-        saveWinSize()
+        If SettingsService.settingsInitialized Then
+            saveWinSize()
+        End If
     End Sub
 
     Sub saveWinPos()
         If WindowState = FormWindowState.Normal Then
             OptionsForm.labelWinPos.Text = "(" & Left & ", " & Top & ")"
-            dll.iniWriteValue("Config", "winPos", IIf(Left < -Width + 5, 0, Left) & ";" & IIf(Top < -20, 0, Top))
+            Dim rawPos As String = IIf(Left < -Width + 5, 0, Left) & ";" & IIf(Top < -20, 0, Top)
+            SettingsService.saveSetting(SettingsIdentifier.WIN_POS, rawPos)
         ElseIf WindowState = FormWindowState.Maximized Then
             OptionsForm.labelWinPos.Text = "(0, 0)"
         End If
@@ -4367,9 +4037,10 @@ Public Class Form1
     Sub saveWinSize()
         If WindowState = FormWindowState.Normal Then
             OptionsForm.labelWinSize.Text = "(" & Width & ", " & Height & ")"
-            dll.iniWriteValue("Config", "winSize", IIf(Width < minWidth, minWidth, Width) & ";" & IIf(Height < minHeight, minHeight, Height))
+            Dim rawSize As String = IIf(Width < minWidth, minWidth, Width) & ";" & IIf(Height < minHeight, minHeight, Height)
+            SettingsService.saveSetting(SettingsIdentifier.WIN_SIZE, rawSize)
         ElseIf WindowState = FormWindowState.Maximized Then
-            dll.iniWriteValue("Config", "winMax", "True", inipath)
+            SettingsService.saveSetting(SettingsIdentifier.WIN_MAX, True)
             OptionsForm.labelWinSize.Text = "(max, max)"
         End If
     End Sub
@@ -4397,7 +4068,7 @@ Public Class Form1
 
     Private Sub menuLyrics_Click(sender As Object, e As EventArgs) Handles menuLyrics.Click
         Dim l As ListBox = getSelectedList()
-        If Not radio AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
+        If Not radioEnabled AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
             Dim track As Track = l.SelectedItem
             openOverlay(eOverlayMode.LYRICS)
             LyricsForm.openLyrics(track)
@@ -4408,7 +4079,7 @@ Public Class Form1
     Sub playStateHandler()
         'playstate handler
         If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-            If trackLoop = loopMode.YES Then
+            If trackLoop = LoopMode.YES Then
                 If wmp.Ctlcontrols.currentPosition > loopVals(2) And wmp.Ctlcontrols.currentPosition < loopVals(1) Then
                     wmp.Ctlcontrols.currentPosition = loopVals(1)
                 End If
@@ -4432,21 +4103,23 @@ Public Class Form1
                 currTrack.currPart = currTrack.getCurrentPart(wmp.Ctlcontrols.currentPosition)
             End If
 
-            If firstPlayStart = firstStartState.STARTING And Not radio Then
+            If firstPlayStart = FirstStartState.STARTING And Not radioEnabled Then
                 If Not last = Nothing Then
                     Dim l As ListBox = getSelectedList()
                     If l.SelectedItem = last Then
-                        If dll.iniReadValue("timetemp", l.SelectedItem.name, 0, inipath) > 2 * 60 Or dll.iniReadValue("timetemp", l.SelectedItem.name, 0, inipath) > l.SelectedItem.length / 2 Then
-                            wmp.Ctlcontrols.currentPosition = dll.iniReadValue("timetemp", l.SelectedItem.name, 0, inipath)
+                        Dim timeTemp As Double = SettingsService.loadSetting(SettingsIdentifier.LAST_TRACK_APPLY_TIME)
+
+                        If timeTemp > 2 * 60 Or timeTemp > l.SelectedItem.length / 2 Then
+                            wmp.Ctlcontrols.currentPosition = timeTemp
                         End If
-                        dll.iniDeleteSection("timetemp", inipath)
-                        dll.iniDeleteSection("temp", inipath)
+                        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_APPLY_TIME, 0.0)
+                        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME, 0.0)
                     End If
                 End If
-                firstPlayStart = firstStartState.STARTED
+                firstPlayStart = FirstStartState.STARTED
             End If
 
-        ElseIf wmp.playState = WMPPlayState.wmppsReady And Not radio Then
+        ElseIf wmp.playState = WMPPlayState.wmppsReady And Not radioEnabled Then
             If Not wmp.URL = "" Then
                 wmp.URL = ""
                 Dim ind As Integer = getSelectedList().SelectedItem.removeFromPlayList()
@@ -4463,7 +4136,7 @@ Public Class Form1
         ElseIf wmp.playState = WMPLib.WMPPlayState.wmppsStopped Then
 
             resetLoop()
-            If radio Then
+            If radioEnabled Then
                 If l2.Items.Count > 0 Then
                     saveRadioTime()
                     wmpstart(l2.SelectedItem.name)
@@ -4475,35 +4148,35 @@ Public Class Form1
                     Dim c As Integer = currTrack.count
                     If c > 0 Then
                         currTrack.count += 1
-                        dll.iniWriteValue("Tracks", currTrack.name, currTrack.count, inipath)
+                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, currTrack.name, currTrack.count)
                     Else
-                        dll.iniWriteValue("Tracks", currTrack.name, dll.iniReadValue("Tracks", currTrack.name, 0, inipath) + 1, inipath)
+                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, currTrack.name, loadRawSetting(SettingsIdentifier.TRACKS_COUNT, currTrack.name) + 1)
                     End If
                     currTrack.selectPlaylist()
-                    Select Case mode
-                        Case playMode.STRAIGHT
+                    Select Case playMode
+                        Case PlayMode.STRAIGHT
                             l2.SelectedIndex += 1
                             wmpstart(l2.SelectedItem)
                             last = l2.SelectedItem
-                        Case playMode.REPEAT
+                        Case PlayMode.REPEAT
                             labelStatsUpdate()
                             currTrack.play()
-                        Case playMode.RANDOM
+                        Case PlayMode.RANDOM
                             playNextTrack()
                         Case Else
                     End Select
                 Else
-                    If mode = playMode.REPEAT Then
+                    If playMode = PlayMode.REPEAT Then
                         wmpstartURL(wmp.URL)
-                    ElseIf mode = playMode.RANDOM Then
+                    ElseIf playMode = PlayMode.RANDOM Then
                         playNextTrack()
                     End If
 
                 End If
             Else
-                If mode = playMode.REPEAT Then
+                If playMode = PlayMode.REPEAT Then
                     wmpstartURL(wmp.URL)
-                ElseIf mode = playMode.RANDOM Then
+                ElseIf playMode = PlayMode.RANDOM Then
                     playNextTrack()
                 End If
 
@@ -4566,24 +4239,22 @@ Public Class Form1
 
     'End Sub
 
-    Sub executeAutoStarts()
-        If autostarts Then
-            Dim allKeys() As String = dll.iniGetAllKeys("Autostarts", inipath)
-            If allKeys IsNot Nothing Then
-                For Each key In allKeys
-                    If GadgetsForm.getAutostartActive(key) Then
-                        Dim file As String = GadgetsForm.getAutostartPath(key)
-                        Dim args As String = GadgetsForm.getAutostartArgs(key)
-                        Try
-                            Process.Start(file, args)
-                        Catch ex As Exception
-                            Throw ex '  MsgBox(ex)
-                        End Try
-                    End If
-                Next
-            End If
-        End If
+
+
+    Private Sub menuStrip_ItemClicked(sender As Object, e As ToolStripItemClickedEventArgs) Handles menuStrip.ItemClicked
+
     End Sub
+
+    Private Sub con2AddToPlaylist_Click(sender As Object, e As EventArgs) Handles con2AddToPlaylist.Click
+
+    End Sub
+
+    Private Sub iconTray_MouseDoubleClick(sender As Object, e As MouseEventArgs) Handles iconTray.MouseDoubleClick
+        Me.Show()
+        ShowInTaskbar = True
+        Me.WindowState = FormWindowState.Normal
+    End Sub
+
 
 
 

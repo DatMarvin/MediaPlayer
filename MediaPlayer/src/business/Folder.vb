@@ -1,4 +1,5 @@
 ﻿Imports System.IO
+Imports MediaPlayer.SettingsEnums
 Public Class Folder
 
     Public Shared root As Folder
@@ -14,19 +15,10 @@ Public Class Folder
     Public children As New List(Of Folder)
     Public isVirtual As Boolean
     Public isExcluded As Boolean
-    Shared ReadOnly Property iniPath As String
-        Get
-            Return Form1.inipath
-        End Get
-    End Property
+
     Shared ReadOnly Property dll As Utils
         Get
             Return Form1.dll
-        End Get
-    End Property
-    Shared ReadOnly Property playlistPath As String
-        Get
-            Return Form1.playlistPath
         End Get
     End Property
 
@@ -111,7 +103,7 @@ Public Class Folder
     End Function
 
     Public Sub updateGenre()
-        genre = Genre.getGenre(dll.iniReadValue("Genres", fullPath,, iniPath))
+        genre = Genre.getGenre(SettingsService.loadRawSetting(SettingsIdentifier.GENRES_MAPPING, fullPath))
         genre.addFolder(Me)
     End Sub
 
@@ -125,7 +117,7 @@ Public Class Folder
         Dim len As Integer = 0
         Dim pop As Integer = 0
         Dim c As Integer = 0
-        Dim diff As Integer = Now.Subtract(Form1.dateLogStart).TotalDays
+        Dim diff As Integer = Now.Subtract(dateLogStart).TotalDays
         Dim age As Integer = 0
         For i = 0 To use.Count - 1
             age += IIf(use(i).added = Nothing, Now.Subtract(New Date(2011, 4, 6)).TotalDays - 1, Now.Subtract(use(i).added).TotalDays)
@@ -143,8 +135,6 @@ Public Class Folder
             Dim exists As Integer = directoryOrVirtualExists(nodePath, a)
             If exists = 0 Then
                 Dim newListPath As String = fullPath & a & "\"
-                ' dll.iniWriteValue(newListPath, "Create section", Now.ToShortDateString, playlistPath)
-                '  dll.iniDeleteKey(newListPath, "Create section", playlistPath)
                 dll.iniAppendRaw(vbNewLine & "[" & newListPath & "]", playlistPath)
                 Dim newFolder As New Folder(newListPath)
                 children.Add(newFolder)
@@ -378,7 +368,8 @@ Public Class Folder
     End Function
 
     Public Function ignoresErrors() As Boolean
-        Dim vals() = dll.iniReadValue("Config", "IgnoreErrors", "", iniPath, 2048).Split(";")
+        Dim ignoreRaw As String = SettingsService.loadSetting(SettingsIdentifier.IGNORE_ERRORS)
+        Dim vals() = ignoreRaw.Split(";")
         If vals IsNot Nothing Then
             For Each s As String In vals
                 If s.ToLower = fullPath.ToLower Then Return True
@@ -388,7 +379,7 @@ Public Class Folder
     End Function
 
     Public Sub writeIgnoreError(ignoreState As Boolean)
-        Dim curr As String = dll.iniReadValue("Config", "IgnoreErrors", "", iniPath)
+        Dim curr As String = SettingsService.getSetting(SettingsIdentifier.IGNORE_ERRORS)
         Dim entries() As String = curr.Split(";")
         If entries IsNot Nothing AndAlso entries.Count > 0 AndAlso entries(0) <> "" Then
             If Not entries.Contains(fullPath) Then
@@ -405,7 +396,7 @@ Public Class Folder
         Else
             curr = fullPath
         End If
-        dll.iniWriteValue("Config", "IgnoreErrors", curr, iniPath)
+        SettingsService.saveSetting(SettingsIdentifier.IGNORE_ERRORS, curr)
     End Sub
 
     '#############SHARED SECTION######################
@@ -413,7 +404,7 @@ Public Class Folder
     Public Shared Sub invalidateFolders(ByVal path As Folder, Optional includeVirtual As Boolean = True)
         If IO.Directory.Exists(path.fullPath) Then
             folders = New List(Of Folder)
-            Folder.top = New Folder(Form1.path)
+            Folder.top = New Folder(SettingsService.path)
             Form1.Cursor = Cursors.WaitCursor
             ' folders = Await AsyncTask.executeTask(Form1, AsyncTask.getAllFolders(path, excludeFolders, includeExcluded))
             folders = getAllFolders(Folder.top, includeVirtual)
@@ -432,7 +423,8 @@ Public Class Folder
         End If
         Form1.root = root.fullPath
         top = New Folder(fullPath)
-        Form1.path = fullPath
+        setSetting(SettingsIdentifier.PATH, fullPath)
+        'Form1.path = fullPath
         If Not IO.Directory.Exists(fullPath) Then IO.Directory.CreateDirectory(fullPath)
     End Sub
 
@@ -484,7 +476,8 @@ Public Class Folder
         Dim fol As Folder = getFolder(dir)
         If fol Is Nothing Then fol = New Folder(dir)
 
-        Dim exclStr() As String = dll.iniReadValue("Config", "exclfol", "", iniPath, 8192).Split(";")
+        Dim exclRaw As String = SettingsService.getSetting(SettingsIdentifier.EXCLUDED_FOLDERS)
+        Dim exclStr() As String = exclRaw.Split(";")
         If exclStr IsNot Nothing AndAlso exclStr.Contains(dir) Then
             fol.isExcluded = True
         End If
@@ -516,8 +509,7 @@ Public Class Folder
             res &= f.fullPath & ";"
         Next
         If res.EndsWith(";") Then res = res.Substring(0, res.Length - 1)
-        dll.iniWriteValue("Config", "exclfol", res, iniPath)
-        '  Form1.localfill()
+        SettingsService.saveSetting(SettingsIdentifier.EXCLUDED_FOLDERS, res)
     End Sub
 
 
@@ -540,7 +532,7 @@ Public Class Folder
 
     Public Shared Function getFolders(Optional virtual As Boolean = True, Optional excluded As Boolean = True) As List(Of Folder)
         Dim res As New List(Of Folder)
-        If Not Form1.radio Then
+        If Not radioEnabled Then
             For Each f As Folder In folders
                 If (Not f.isExcluded Or excluded) And (Not f.isVirtual Or virtual) Then
                     res.Add(f)
@@ -581,9 +573,9 @@ Public Class Folder
     End Function
 
     Overrides Function ToString() As String
-        If Form1.searchState > Form1.eSearchState.NONE Then
+        If Form1.searchState > PlayerEnums.SearchState.NONE Then
             Return name & " - [" & nodePath & "]"
-        ElseIf Form1.optionsMode Or NodeSelectionForm.Visible Then
+        ElseIf optionsMode Or NodeSelectionForm.Visible Then
             Return nodePath
         Else
             Return name

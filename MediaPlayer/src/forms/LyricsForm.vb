@@ -17,20 +17,14 @@ Public Class LyricsForm
         End Get
     End Property
 
-    ReadOnly Property inipath() As String
-        Get
-            Return Form1.inipath
-        End Get
-    End Property
-    ReadOnly Property lyrPath() As String
-        Get
-            Return Form1.lyrpath
-        End Get
-    End Property
 
     Dim currLyrTrack As Track
     Dim state As lyricState
-    Dim autoSave As Boolean
+    Public ReadOnly Property lyricsAutoSave() As Boolean
+        Get
+            Return SettingsService.getSetting(SettingsIdentifier.LYRICS_AUTO_SAVE)
+        End Get
+    End Property
     Shared queuedTrack As Track
 
     Enum lyricState
@@ -45,19 +39,18 @@ Public Class LyricsForm
         colorForm()
         setState(lyricState.INIT)
 
-        autoSave = dll.iniReadValue("Config", "lyricsAutoSave", 0, Form1.inipath)
-        checkAutoSave.Checked = autoSave
+        checkAutoSave.Checked = lyricsAutoSave
     End Sub
 
     Private Sub LyricsForm_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
         If state = lyricState.MODIFIED Then
-            saveLyrics(Not autoSave)
+            saveLyrics(Not lyricsAutoSave)
         End If
         overlayMode -= Form1.eOverlayMode.LYRICS
     End Sub
 
     Sub colorForm()
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", 0, inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
 
@@ -95,7 +88,7 @@ Public Class LyricsForm
     End Sub
 
     Sub updateUI()
-        Form1.loadFont(tLyrics, "fontLyrics", New Font("Microsoft Sans Serif", 14))
+        Form1.loadFont(tLyrics, SettingsIdentifier.FONT_LYRICS, New Font("Microsoft Sans Serif", 14))
         tLyrics.Size = New Size(Width - 17, Height - 75)
         tLyrics.Location = New Point(0, 0)
         buttonSaveExit.Location = New Point(tLyrics.Right - buttonSaveExit.Width - 3, tLyrics.Bottom + 5)
@@ -108,9 +101,9 @@ Public Class LyricsForm
     Sub openLyrics(track As Track)
         If queuedTrack Is Nothing Then
             queuedTrack = track
-            If Form1.isValidDirectoryPath(lyrPath) Then
+            If Form1.isValidDirectoryPath(lyrpath) Then
                 If state = lyricState.MODIFIED Then
-                    saveLyrics(Not autoSave)
+                    saveLyrics(Not lyricsAutoSave)
                 End If
                 updateUI()
                 currLyrTrack = queuedTrack
@@ -129,9 +122,9 @@ Public Class LyricsForm
 
 
     Function readLyricsStream(ByVal track As Track) As String
-        Dim path As String = lyrPath & track.name & ".txt"
+        Dim path As String = lyrpath & track.name & ".txt"
         If Not File.Exists(path) Then
-            Directory.CreateDirectory(lyrPath)
+            Directory.CreateDirectory(lyrpath)
             Return ""
         End If
         Dim s As String = ""
@@ -147,7 +140,7 @@ Public Class LyricsForm
     End Function
 
     Function writeLyricsStream() As Boolean
-        Dim path As String = lyrPath & currLyrTrack.name & ".txt"
+        Dim path As String = lyrpath & currLyrTrack.name & ".txt"
         Try
             Using writer As New StreamWriter(path, False)
                 writer.Write(tLyrics.Text)
@@ -160,12 +153,12 @@ Public Class LyricsForm
 
 
     Public Function hasLyrics(track As Track) As Boolean
-        If Not File.Exists(lyrPath & track.name & ".txt") Then
+        If Not File.Exists(lyrpath & track.name & ".txt") Then
             Return False
         End If
         Dim sr As StreamReader = Nothing
         Try
-            sr = New StreamReader(lyrPath & track.name & ".txt")
+            sr = New StreamReader(lyrpath & track.name & ".txt")
             Using sr
                 Return sr.Peek() > -1
             End Using
@@ -223,8 +216,7 @@ Public Class LyricsForm
     End Sub
 
     Private Sub checkAutoSave_CheckedChanged(sender As Object, e As EventArgs) Handles checkAutoSave.CheckedChanged
-        autoSave = checkAutoSave.Checked
-        dll.iniWriteValue("Config", "lyricsAutoSave", Convert.ToInt32(autoSave), Form1.inipath)
+        SettingsService.saveSetting(SettingsIdentifier.LYRICS_AUTO_SAVE, sender.checked)
     End Sub
 
     Private Sub buttonSearchOnline_Click(sender As Object, e As EventArgs) Handles buttonSearchOnline.Click
@@ -250,14 +242,12 @@ Public Class LyricsForm
     Private Sub tLyrics_MouseWheel(sender As Object, e As MouseEventArgs) Handles tLyrics.MouseWheel
         Dim senderControl As Control = CType(sender, Control)
         If Key.ctrlKey Then
-            Dim iniKey As String = "fontLyrics"
             If senderControl.Font.Size >= 1 And senderControl.Font.Size <= 70 Then
+                Dim fontSize As Integer = senderControl.Font.Size + IIf(senderControl.Font.Size > 1, -1, 0)
                 If e.Delta > 0 Then
-                    OptionsForm.saveFont(senderControl, New Font(senderControl.Font.FontFamily.Name, senderControl.Font.Size + IIf(senderControl.Font.Size < 70, 1, 0), senderControl.Font.Style), iniKey)
-                Else
-                    OptionsForm.saveFont(senderControl, New Font(senderControl.Font.FontFamily.Name, senderControl.Font.Size + IIf(senderControl.Font.Size > 1, -1, 0), senderControl.Font.Style), iniKey)
+                    fontSize = senderControl.Font.Size + IIf(senderControl.Font.Size < 70, 1, 0)
                 End If
-
+                OptionsForm.saveFont(senderControl, New Font(senderControl.Font.FontFamily.Name, fontSize, senderControl.Font.Style), SettingsIdentifier.FONT_LYRICS)
             End If
             Dim x As Integer = senderControl.Width - 85
             Dim y As Integer = Cursor.Position.Y - senderControl.Top - Me.Top - 40

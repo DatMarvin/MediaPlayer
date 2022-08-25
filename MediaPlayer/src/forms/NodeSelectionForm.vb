@@ -26,7 +26,7 @@ Public Class NodeSelectionForm
     End Sub
 
     Sub colorMe() '06.08.19
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", "False", Form1.inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
 

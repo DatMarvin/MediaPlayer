@@ -9,6 +9,7 @@ Imports CoreAudioApi 'reference
 Imports System.Runtime.InteropServices
 
 Public Class Utils
+    Public Declare Sub mouse_event Lib "user32" Alias "mouse_event" (ByVal dwFlags As Integer, ByVal dx As Integer, ByVal dy As Integer, ByVal cButtons As Integer, ByVal dwExtraInfo As Integer)
 
     Public Declare Function getForegroundWindow Lib "user32" Alias "GetForegroundWindow" () As IntPtr
 
@@ -17,6 +18,11 @@ Public Class Utils
     Public Declare Function GetWindowTextLength Lib "user32.dll" Alias "GetWindowTextLengthA" (ByVal hWnd As IntPtr) As Integer
 
     Public Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hWnd As IntPtr, ByRef lpdwProcessId As Integer) As Integer
+
+    Public Const MOUSEEVENTF_LEFTDOWN = &H2 : Private Const MOUSEEVENTF_LEFTUP = &H4
+    Public Const MOUSEEVENTF_RIGHTDOWN = &H8 : Private Const MOUSEEVENTF_RIGHTUP = &H10
+    Public Const MOUSEEVENTF_MIDDLEDOWN = &H20 : Private Const MOUSEEVENTF_MIDDLEUP = &H40
+    Public Const MOUSEEVENTF_WHEELROTATE = &H800
 
     <DllImport("user32.dll", EntryPoint:="SendMessageA")>
     Public Shared Sub SendMessage(
@@ -32,6 +38,51 @@ Public Class Utils
     Function isWindowInForeground() As Boolean
         Return getForegroundWindow() = Process.GetCurrentProcess().MainWindowHandle
     End Function
+
+    Public Shared Sub lMouseClick(Optional ByVal times As Integer = 1)
+        For i = 1 To times
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0) : mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+        Next
+
+    End Sub
+    Public Shared Sub rMouseClick()
+        mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0) : mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0)
+    End Sub
+    Public Shared Sub mMouseClick()
+        mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0) : mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0)
+    End Sub
+
+
+    Public Shared Function concatPaths(path1 As String, path2 As String)
+        Return IO.Path.Combine({path1, path2})
+    End Function
+
+    Public Shared Function concatPaths(paths() As String)
+        Return IO.Path.Combine(paths)
+    End Function
+
+    Public Shared Function appName() As String
+        Dim fullPath As String = getFullExePath()
+        Dim name As String = fullPath.Substring(fullPath.LastIndexOf("\") + 1, fullPath.LastIndexOf(".") - fullPath.LastIndexOf("\") - 1)
+        Return name
+    End Function
+
+    Public Shared Function getFullExePath() As String
+        Return System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
+    End Function
+
+
+    Public Shared Sub killProc(ByVal name As String, Optional excludeOwn As Boolean = False)
+        Try
+            For Each p As Process In Process.GetProcessesByName(name)
+                If Not p.Id = Process.GetCurrentProcess().Id Or Not excludeOwn Then
+                    p.Kill()
+                End If
+            Next
+        Catch ex As Exception
+        End Try
+    End Sub
+
 
     Public Shared Function AlphToInt(ByVal abc As Char) As Integer
         abc = CStr(abc).ToLower
@@ -356,7 +407,7 @@ Public Class Utils
             ints(ints.Length - 1) = value
         End If
     End Sub
-    Sub ExtendArray(ByRef strs() As String, Optional ByVal value As String = "")
+    Shared Sub ExtendArray(ByRef strs() As String, Optional ByVal value As String = "")
         If IsNothing(strs) Then
             ReDim strs(0)
             strs(0) = value
@@ -480,7 +531,7 @@ Public Class Utils
         ByVal Section As String, ByVal NoKey As Integer, ByVal NoSetting As Integer,
         ByVal FileName As String) As Integer
 
-    Public inipath As String
+    Public Shared inipath As String
 
     Function iniIsValidSection(ByVal Section As String, Optional ByVal path As String = "") As Boolean
         If Not path = "" Then inipath = path
@@ -528,7 +579,7 @@ Public Class Utils
         Return res
     End Function
 
-    Function iniGetAllKeys(ByVal Section As String, Optional ByVal path As String = "") As String()
+    Public Shared Function iniGetAllKeys(ByVal Section As String, Optional ByVal path As String = "") As String()
         If Not path = "" Then inipath = path
         If inipath = "" Or IO.File.Exists(inipath) = False Then
             Return Nothing

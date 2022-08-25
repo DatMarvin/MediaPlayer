@@ -17,10 +17,18 @@ Public Class TrackSelectionForm
     Dim mode As eTrackSelectionMode
     Dim changeOccured As Boolean = False
     Dim searchState As eSearchState
-    Dim searchSource As Boolean
+    Public ReadOnly Property searchSource() As Boolean
+        Get
+            Return SettingsService.getSetting(SettingsIdentifier.TRACK_SELECTION_SEARCH_SOURCE)
+        End Get
+    End Property
     Dim searchChecked As New List(Of Track)
-    Dim playOnClick As Boolean
-    Dim sortMode As Form1.sortMode
+    Public ReadOnly Property playOnClick() As Boolean
+        Get
+            Return SettingsService.getSetting(SettingsIdentifier.TRACK_SELECTION_PLAY_ON_CLICK)
+        End Get
+    End Property
+    Dim sortMode As PlayerEnums.sortMode
     Dim reverseSort As Boolean
 
     ReadOnly Property args As List(Of String)
@@ -29,12 +37,6 @@ Public Class TrackSelectionForm
             Return arguments.ToList()
         End Get
     End Property
-    ReadOnly Property playlistPath() As String
-        Get
-            Return Form1.playlistPath
-        End Get
-    End Property
-
     Enum eTrackSelectionMode
         SELECTION
         MANAGE
@@ -50,8 +52,6 @@ Public Class TrackSelectionForm
         End If
         instances.Add(Me)
         currLevel = instances.Count
-        searchSource = dll.iniReadValue("Config", "searchSource", 0, Form1.inipath)
-        playOnClick = dll.iniReadValue("Config", "playOnClick", 0, Form1.inipath)
         checkPlayOnClick.Checked = playOnClick
         checkPlayOnClick.BringToFront()
         sortCombo.SelectedIndex = sortMode / 2
@@ -60,7 +60,7 @@ Public Class TrackSelectionForm
 
 
     Sub colorMe() '06.08.19
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", Form1.inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
 
@@ -116,8 +116,8 @@ Public Class TrackSelectionForm
         newForm.mode = mode
         newForm.Text = title
         newForm.currTracks = tracks
-        newForm.sortMode = Form1.trackSort
-        newForm.reverseSort = newForm.dll.getBinaryComponents(Form1.trackSort).Contains(Form1.sortMode.REVERSE)
+        newForm.sortMode = trackSort
+        newForm.reverseSort = newForm.dll.getBinaryComponents(trackSort).Contains(PlayerEnums.sortMode.REVERSE)
 
         newForm.refreshList()
         newForm.refreshButtons()
@@ -321,15 +321,15 @@ Public Class TrackSelectionForm
     Function addListRow(t As Track) As ListViewItem
         Dim item As ListViewItem = listTrackSelection.Items.Add(t.name)  'name
         Select Case sortMode + CInt(reverseSort)
-            Case Form1.sortMode.DATE_ADDED
+            Case PlayerEnums.sortMode.DATE_ADDED
                 listTrackSelection.Items.Item(listTrackSelection.Items.Count - 1).SubItems.Add(t.dateString)
-            Case Form1.sortMode.TIME_LISTENED
+            Case PlayerEnums.sortMode.TIME_LISTENED
                 listTrackSelection.Items.Item(listTrackSelection.Items.Count - 1).SubItems.Add(dll.SecondsTodhmsString(t.count * t.length))
-            Case Form1.sortMode.COUNT
+            Case PlayerEnums.sortMode.COUNT
                 listTrackSelection.Items.Item(listTrackSelection.Items.Count - 1).SubItems.Add(t.count)
-            Case Form1.sortMode.LENGTH
+            Case PlayerEnums.sortMode.LENGTH
                 listTrackSelection.Items.Item(listTrackSelection.Items.Count - 1).SubItems.Add(dll.secondsTo_ms_Format(t.length))
-            Case Form1.sortMode.POPULARITY
+            Case PlayerEnums.sortMode.POPULARITY
                 listTrackSelection.Items.Item(listTrackSelection.Items.Count - 1).SubItems.Add(dll.SecondsTohmsString(t.popularity))
             Case Else
                 listTrackSelection.Items.Item(listTrackSelection.Items.Count - 1).SubItems.Add("")
@@ -464,7 +464,7 @@ Public Class TrackSelectionForm
         If searchState > eSearchState.NONE Then
             cancelSearch()
         End If
-        If dll.getBinaryComponents(sortMode).Contains(Form1.sortMode.REVERSE) Then
+        If dll.getBinaryComponents(sortMode).Contains(PlayerEnums.sortMode.REVERSE) Then
             sortMode -= 1
             reverseSort = False
             sortRevButton.Text = "↑"
@@ -562,7 +562,7 @@ Public Class TrackSelectionForm
     End Sub
 
     Private Sub t2_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles tSearch.TextChanged
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", "False", Form1.inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         tSearch.ForeColor = IIf(tSearch.Text = "Search...", Color.DimGray, IIf(inverted, Color.White, Color.Black))
         ' tSearch.ForeColor = Color.Black
         If tSearch.Text = "" Then
@@ -654,8 +654,7 @@ Public Class TrackSelectionForm
 
 
     Private Sub checkSearchSource_CheckedChanged(sender As Object, e As EventArgs) Handles checkSearchSource.CheckedChanged
-        searchSource = checkSearchSource.Checked
-        dll.iniWriteValue("Config", "searchSource", Convert.ToInt32(searchSource), Form1.inipath)
+        SettingsService.saveSetting(SettingsIdentifier.TRACK_SELECTION_SEARCH_SOURCE, sender.checked)
         If searchState = eSearchState.SEARCHING Then searchFill()
         tSearch.Focus()
     End Sub
@@ -664,8 +663,7 @@ Public Class TrackSelectionForm
     End Sub
 
     Private Sub checkPlayOnClick_CheckedChanged(sender As Object, e As EventArgs) Handles checkPlayOnClick.CheckedChanged
-        playOnClick = checkPlayOnClick.Checked
-        dll.iniWriteValue("Config", "playOnClick", Convert.ToInt32(playOnClick), Form1.inipath)
+        SettingsService.saveSetting(SettingsIdentifier.TRACK_SELECTION_PLAY_ON_CLICK, sender.checked)
         If Not playOnClick Then Form1.wmp.Ctlcontrols.pause()
     End Sub
 

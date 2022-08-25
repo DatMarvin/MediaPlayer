@@ -1,15 +1,11 @@
-﻿Public Class Genre
+﻿Imports MediaPlayer.SettingsEnums
+Public Class Genre
 
     Shared formHandle As Form1
 
     Public Shared ReadOnly Property dll() As Utils
         Get
             Return formHandle.dll
-        End Get
-    End Property
-    Shared ReadOnly Property iniPath As String
-        Get
-            Return formHandle.inipath
         End Get
     End Property
 
@@ -61,7 +57,7 @@
     End Function
 
     Public Function folderAssociationExists(folder As Folder) As Genre
-        Dim currVal As String = dll.iniReadValue("Genres", folder.fullPath, "", iniPath)
+        Dim currVal As String = loadRawSetting(SettingsIdentifier.GENRES_MAPPING, folder.fullPath)
         If Not currVal = "" Then
             For Each g As Genre In genres
                 If Not g.Equals(Me) Then
@@ -86,7 +82,7 @@
         For Each g As Genre In genres
             g.tracks = New List(Of Track)
         Next
-        Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs("Genres", iniPath)
+        Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs(IniSection.GENRES, inipath)
         For Each p As KeyValuePair(Of String, String) In pairs
             If Not p.Key.Contains("\") Then
                 Dim currGenre As Genre = getGenre(p.Value)
@@ -100,7 +96,7 @@
         For Each g As Genre In genres
             g.folders = New List(Of Folder)
         Next
-        Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs("Genres", iniPath)
+        Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs(IniSection.GENRES, inipath)
         For Each p As KeyValuePair(Of String, String) In pairs
             If p.Key.Contains("\") Then
                 Dim currGenre As Genre = getGenre(p.Value)
@@ -128,7 +124,7 @@
             res &= g.name & ";"
         Next
         If res.EndsWith(";") Then res = res.Substring(0, res.Length - 1)
-        dll.iniWriteValue("Config", "Genres", res, iniPath)
+        SettingsService.saveSetting(SettingsIdentifier.GENRES, res)
     End Sub
 
 

@@ -17,24 +17,21 @@ Public Class PartsForm
         End Get
     End Property
 
-    ReadOnly Property inipath() As String
-        Get
-            Return Form1.inipath
-        End Get
-    End Property
-    ReadOnly Property lyrPath() As String
-        Get
-            Return Form1.lyrpath
-        End Get
-    End Property
-
-
     Dim currTrack As Track
     Dim currTrackPart As TrackPart
     Dim queuedTrack As Track
     Dim state As partState
-    Dim autoSave As Boolean
-    Dim playOnChange As Boolean
+    Public ReadOnly Property autoSave() As Boolean
+        Get
+            Return SettingsService.getSetting(SettingsIdentifier.TRACK_PARTS_AUTO_SAVE)
+        End Get
+    End Property
+    Public ReadOnly Property playOnChange() As Boolean
+        Get
+            Return SettingsService.getSetting(SettingsIdentifier.TRACK_PARTS_PLAY_ON_CHANGE)
+        End Get
+    End Property
+
 
     Enum partState
         INIT
@@ -47,9 +44,7 @@ Public Class PartsForm
         Me.Location = New Point(Math.Max(0, Form1.Left - Width), yNorm + Math.Max(0, 0 - yNorm) + Math.Min(0, My.Computer.Screen.WorkingArea.Height - (yNorm + Height)))
         colorForm()
 
-        autoSave = dll.iniReadValue("Config", "partsAutoSave", 0, Form1.inipath)
         checkAutoSave.Checked = autoSave
-        playOnChange = dll.iniReadValue("Config", "playOnChange", 0, Form1.inipath)
         checkPlayOnChange.Checked = playOnChange
     End Sub
 
@@ -62,7 +57,7 @@ Public Class PartsForm
     End Sub
 
     Sub colorForm()
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", 0, inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
 
@@ -261,7 +256,7 @@ Public Class PartsForm
 
     Private Sub listParts_ItemActivate(sender As Object, e As EventArgs) Handles listParts.ItemActivate
         If listParts.SelectedIndices.Count > 0 AndAlso listParts.SelectedIndices(0) > -1 Then
-            If Not Form1.radio Then
+            If Not radioEnabled Then
                 Form1.wmpstart(currTrack)
                 Form1.setLoop(currTrackPart.fromSec, currTrackPart.toSec)
             End If
@@ -406,13 +401,11 @@ Public Class PartsForm
     End Sub
 
     Private Sub checkAutoSave_CheckedChanged(sender As Object, e As EventArgs) Handles checkAutoSave.CheckedChanged
-        autoSave = checkAutoSave.Checked
-        dll.iniWriteValue("Config", "partsAutoSave", Convert.ToInt32(autoSave), Form1.inipath)
+        SettingsService.saveSetting(SettingsIdentifier.TRACK_PARTS_AUTO_SAVE, sender.checked)
     End Sub
 
     Private Sub checkPlayOnChange_CheckedChanged(sender As Object, e As EventArgs) Handles checkPlayOnChange.CheckedChanged
-        playOnChange = checkPlayOnChange.Checked
-        dll.iniWriteValue("Config", "playOnChange", Convert.ToInt32(playOnChange), Form1.inipath)
+        SettingsService.saveSetting(SettingsIdentifier.TRACK_PARTS_PLAY_ON_CHANGE, sender.checked)
     End Sub
     Private Sub checkPlayOnChange_Click(sender As Object, e As EventArgs) Handles checkPlayOnChange.Click
         If Not playOnChange And Form1.wmp.URL.ToLower = currTrack.fullPath.ToLower And Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then

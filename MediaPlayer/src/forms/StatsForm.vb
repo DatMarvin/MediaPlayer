@@ -1,4 +1,6 @@
 ﻿'20.08.2019
+
+Imports MediaPlayer.SettingsEnums
 Public Class StatsForm
 
     Property overlayMode() As Form1.eOverlayMode
@@ -13,13 +15,6 @@ Public Class StatsForm
     ReadOnly Property dll() As Utils
         Get
             Return Form1.dll
-        End Get
-    End Property
-
-
-    ReadOnly Property inipath() As String
-        Get
-            Return Form1.inipath
         End Get
     End Property
 
@@ -55,7 +50,7 @@ Public Class StatsForm
     Sub updateUI(Optional adjustColumns As Boolean = False)
 
         tvSelection.Font = Form1.tv.Font
-        listTrackStats.Font = New Font("Microsoft Sans Serif", Int(dll.iniReadValue("Config", "list1_font", 8, inipath)))
+        listTrackStats.Font = New Font("Microsoft Sans Serif", Int(8))
         listRadioStats.Font = listTrackStats.Font
         listFolderStats.Font = listTrackStats.Font
 
@@ -139,7 +134,7 @@ Public Class StatsForm
     End Sub
 
     Sub colorForm()
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", 0, inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
 
@@ -220,7 +215,7 @@ Public Class StatsForm
             topCollection.Add(New ListViewItem(folders(i).nodePath))
         Next
         Dim subCollection As List(Of Integer())
-        subCollection = Await AsyncTask.executeTask(Me, AsyncTask.getFolderStatsList(folders, Form1.dateLogStart))
+        subCollection = Await AsyncTask.executeTask(Me, AsyncTask.getFolderStatsList(folders, dateLogStart))
         For i = 0 To topCollection.Count - 1
             Dim n As Integer = subCollection(i)(0)
             If n = 0 Then n = 1
@@ -235,8 +230,8 @@ Public Class StatsForm
     End Function
 
     Sub loadRadioStats()
-        Dim names() As String = dll.iniGetAllKeys("RadioTime", inipath)
-        Dim vals() As String = dll.iniGetAllValues("RadioTime", inipath)
+        Dim names() As String = dll.iniGetAllKeys(IniSection.RADIO_TIME, inipath)
+        Dim vals() As String = dll.iniGetAllValues(IniSection.RADIO_TIME, inipath)
         If names IsNot Nothing And vals IsNot Nothing Then
             For i = 0 To names.Length - 1
                 listRadioStats.Items.Add(names(i))
@@ -322,7 +317,7 @@ Public Class StatsForm
 
     Private Sub listTrackStats_ItemActivate(ByVal sender As Object, ByVal e As System.EventArgs) Handles listTrackStats.ItemActivate
         If Not IsNothing(tvSelection.SelectedNode) Then
-            If Not Form1.radio Then
+            If Not radioEnabled Then
                 Form1.last = Track.getFirstTrack(listTrackStats.SelectedItems(0).Text)
                 Form1.wmpstart(Form1.last)
             End If
@@ -409,9 +404,9 @@ Public Class StatsForm
         End Function
         Public Function dateCompare(ByVal x As Object, ByVal y As Object, ByVal col As Integer) As Integer
             Dim s1 As String = CType(x, ListViewItem).SubItems(col).Text
-            If s1 = "" Then s1 = Form1.dateLogStart
+            If s1 = "" Then s1 = dateLogStart
             Dim s2 As String = CType(y, ListViewItem).SubItems(col).Text
-            If s2 = "" Then s2 = Form1.dateLogStart
+            If s2 = "" Then s2 = dateLogStart
             Return CDate(s1).CompareTo(CDate(s2))
         End Function
 
@@ -424,7 +419,7 @@ Public Class StatsForm
     Public Sub totaltime()
         Dim radTime As Integer = 0
         Dim radnumber As Integer = 0
-        Dim vals() As String = dll.iniGetAllValues("RadioTime", inipath)
+        Dim vals() As String = dll.iniGetAllValues(IniSection.RADIO_TIME, inipath)
         If vals IsNot Nothing Then
             For i = 0 To vals.Length - 1
                 radTime += vals(i)
@@ -439,9 +434,9 @@ Public Class StatsForm
         Dim allCount As Integer = 0
 
 
-        Dim diff As Integer = Now.Subtract(IIf(Form1.dateLogStart.ToShortDateString() = "06.04.2011", CDate("11.09.2012"), Form1.dateLogStart)).TotalDays
+        Dim diff As Integer = Now.Subtract(IIf(dateLogStart.ToShortDateString() = "06.04.2011", CDate("11.09.2012"), dateLogStart)).TotalDays
 
-        Dim strTracks() As String = dll.iniGetAllLines("Tracks", inipath)
+        Dim strTracks() As String = dll.iniGetAllLines(IniSection.TRACKS, inipath)
         If Not IsNothing(strTracks) Then
             For i = 0 To strTracks.Length - 1
                 Dim name As String = Mid(strTracks(i), 1, strTracks(i).LastIndexOf("="))
@@ -449,7 +444,7 @@ Public Class StatsForm
                 If count > 0 Then
                     allnumber += 1
                     allCount += count
-                    Dim currLen As Double = dll.iniReadValue("Time", name, 0, inipath)
+                    Dim currLen As Double = loadRawSetting(SettingsIdentifier.TRACKS_TIME, name)
                     alltim += count * currLen
                     allLen += currLen
                 End If

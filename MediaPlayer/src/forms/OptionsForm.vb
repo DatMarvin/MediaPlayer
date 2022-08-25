@@ -1,4 +1,5 @@
 ﻿
+Imports MediaPlayer.SettingsEnums
 Imports System.Reflection
 Imports System.Net
 Imports System.IO
@@ -27,11 +28,7 @@ Public Class OptionsForm
             Return Form1.tv
         End Get
     End Property
-    ReadOnly Property inipath As String
-        Get
-            Return Form1.inipath
-        End Get
-    End Property
+
     ReadOnly Property ftpCred As Utils.credentials
         Get
             Return dll.ftpCred
@@ -167,7 +164,7 @@ Public Class OptionsForm
                 sortingBox.Items.Clear()
                 sortingBox.Items.Add("Default")
                 sortingBox.Items.Add("Time Listened")
-                sortingBox.SelectedIndex = dll.iniReadValue("Config", "radioSort", 0, inipath)
+                sortingBox.SelectedIndex = SettingsService.getSetting(SettingsIdentifier.RADIO_SORT)
                 Dim rads As List(Of Radio) = Radio.getStations()
                 If sortingBox.SelectedIndex = 1 Then
                     rads.Sort(Function(x, y) y.time.CompareTo(x.time))
@@ -180,9 +177,9 @@ Public Class OptionsForm
                 Dim ownIp As String = remoteTcp.getIPAddress(Dns.GetHostName)
                 labelOwnIp.Text = IIf(ownIp = "", "Offline", ownIp)
                 setExternalIP()
-                checkEnableStartup.Checked = dll.iniReadValue("Config", "Remote", 0, inipath)
-                checkBlockExtIps.Checked = dll.iniReadValue("Config", "RemoteBlockExtIps", 0, inipath)
-                checkBlockMessages.Checked = dll.iniReadValue("Config", "remoteBlockMessages", 0, inipath)
+                checkEnableStartup.Checked = SettingsService.getSetting(SettingsIdentifier.REMOTE)
+                checkBlockExtIps.Checked = SettingsService.getSetting(SettingsIdentifier.REMOTE_BLOCK_EXT_IPS)
+                checkBlockMessages.Checked = SettingsService.getSetting(SettingsIdentifier.REMOTE_BLOCK_MESSAGES)
                 refreshRemoteUI()
                 tPort.Text = ""
                 labelPort.Text = remoteTcp.port
@@ -201,18 +198,18 @@ Public Class OptionsForm
                         labelCurrVersion.Text = "Unknown"
                     End Try
                 End Try
-                checkAutoUpdate.Checked = dll.iniReadValue("Config", "ftpAutoUpdate", 0, inipath)
+                checkAutoUpdate.Checked = SettingsService.getSetting(SettingsIdentifier.FTP_AUTO_UPDATE)
 
-                tftpIp.Text = dll.iniReadValue("Config", "ftpIp", "127.0.0.1", inipath)
-                tftpUser.Text = dll.iniReadValue("Config", "ftpUser", "laurids", inipath)
-                tftpPw.Text = dll.iniReadValue("Config", "ftpPw", "huan", inipath)
+                tftpIp.Text = SettingsService.getSetting(SettingsIdentifier.FTP_IP)
+                tftpUser.Text = SettingsService.getSetting(SettingsIdentifier.FTP_USER)
+                tftpPw.Text = SettingsService.getSetting(SettingsIdentifier.FTP_PW)
                 pBar.Value = 0
                 pBar2.Value = 0
                 labelftpCurrProg.Text = "0 / 0"
                 labelftpTotalProg.Text = "0 / 0"
                 labelPublishedVersion.Text = ""
                 addCoreFiles()
-                Dim publ() As String = dll.iniReadValue("Config", "ftpPublish", "", inipath).Split(";")
+                Dim publ() As String = SettingsService.loadSetting(SettingsIdentifier.FTP_AUTO_UPDATE).Split(";")
                 If publ IsNot Nothing Then
                     For i = 0 To publ.Length - 1
                         If Not publ(i) = "" Then
@@ -225,12 +222,12 @@ Public Class OptionsForm
             Case optionState.PATHS
                 labelMenu.Text = "First two paths must be valid to use the player, other invalid paths may lead to malfunctions."
                 tStatsFile.Text = inipath
-                tMusicDir.Text = Form1.path
-                tPlaylistFile.Text = Form1.playlistPath
-                tDatesFile.Text = Form1.logpath
-                tLyricsDir.Text = Form1.lyrpath
-                tFtpDir.Text = Form1.ftpPath
-                If Form1.darkTheme Then
+                tMusicDir.Text = path
+                tPlaylistFile.Text = playlistPath
+                tDatesFile.Text = logpath
+                tLyricsDir.Text = lyrpath
+                tFtpDir.Text = ftpPath
+                If darkTheme Then
                     logPathKeyPic.BackgroundImage = My.Resources.unlock_inv
                     logPathReloadPic.BackgroundImage = My.Resources.rel_inv
                 Else
@@ -256,15 +253,15 @@ Public Class OptionsForm
                 refillPlaylists(sel)
 
             Case optionState.PLAYER
-                checkDarkTheme.Checked = Form1.darkTheme
-                checkSavePos.Checked = Form1.saveWinPosSize
-                trackbarBalance.Value = Form1.balance
-                trackbarPlayRate.Value = scaleToNum(Form1.playRate)
+                checkDarkTheme.Checked = darkTheme
+                checkSavePos.Checked = saveWinPosSize
+                trackbarBalance.Value = balance
+                trackbarPlayRate.Value = scaleToNum(playRate)
                 labelBalance.Text = "Balance: " & trackbarBalance.Value
                 labelPlayRate.Text = "Play Rate: " & numToScale(trackbarPlayRate.Value)
-                checkRandomNextTrack.Checked = Form1.randomNextTrack
-                checkPlaylistHistory.Checked = Form1.savePlaylistHistory
-                checkRemoveTrackFromList.Checked = Form1.removeNextTrack
+                checkRandomNextTrack.Checked = randomNextTrack
+                checkPlaylistHistory.Checked = getSetting(SettingsIdentifier.PLAYLIST_SAVE_HISTORY)
+                checkRemoveTrackFromList.Checked = removeNextTrack
 
                 Form1.saveWinPos()
                 Form1.saveWinSize()
@@ -280,9 +277,9 @@ Public Class OptionsForm
         Select Case state
             Case optionState.KEYSET
                 If waitingInput Then switchKeyInputState()
-                Form1.delayMs = numDelay.Value
+                ' Form1.delayMs = numDelay.Value
+                saveSetting(SettingsIdentifier.DELAY_MS, numDelay.Value)
                 Form1.keydelayt.Interval = numDelay.Value
-                dll.iniWriteValue("config", "delay", numDelay.Value, inipath)
 
             Case optionState.GENRES
                 Dim diff As Boolean = False
@@ -299,7 +296,7 @@ Public Class OptionsForm
                         ' Form1.genres(i) = listGenres.Items(i)
                         gString &= listGenres.Items(i) & IIf(i = listGenres.Items.Count - 1, "", ";")
                     Next
-                    dll.iniWriteValue("Config", "Genres", gString, inipath)
+                    SettingsService.saveSetting(SettingsIdentifier.GENRES, gString)
                 End If
                 Form1.labelStatsUpdate()
 
@@ -309,13 +306,13 @@ Public Class OptionsForm
             Case optionState.RADIO
                 If sortingBox.SelectedIndex = 0 Then
                     For i = 0 To listStations.Items.Count - 1
-                        dll.iniDeleteKey("Radio", listStations.Items(i).name, inipath)
+                        dll.iniDeleteKey(IniSection.RADIO, listStations.Items(i).name, inipath)
                     Next
                 End If
                 For i = 0 To listStations.Items.Count - 1
-                    dll.iniWriteValue("Radio", listStations.Items(i).name, listStations.Items(i).url, inipath)
+                    saveRawSetting(SettingsIdentifier.RADIO_STATIONS, listStations.Items(i).name, listStations.Items(i).url)
                 Next
-                If Form1.radio Then
+                If radioEnabled Then
                     Form1.changeSourceMode(1)
                 End If
 
@@ -332,23 +329,24 @@ Public Class OptionsForm
 
             Case optionState.PATHS
                 If checkValidity(True, True) Then
-                    If Not Form1.inipath = tStatsFile.Text Then
-                        Form1.inipath = tStatsFile.Text
-                        If dll.iniIsValidSection("Tracks", inipath) Then
+                    SettingsService.setSetting(SettingsIdentifier.INIPATH, tStatsFile.Text)
+                    If Not inipath = tStatsFile.Text Then
+                        'Form1.inipath = tStatsFile.Text
+                        If dll.iniIsValidSection(IniSection.TRACKS, inipath) Then
                             If MsgBox("You chose a new settings file. Override other paths from that file?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
-                                setPath(0, dll.iniReadValue("Config", "path", "", inipath))
-                                setPath(1, dll.iniReadValue("Config", "logpath", "", inipath))
-                                setPath(2, dll.iniReadValue("Config", "lyrpath", "", inipath))
-                                setPath(3, dll.iniReadValue("Config", "ftppath", "", inipath))
-                                setPath(4, dll.iniReadValue("Config", "commpath", "", inipath))
-                                setPath(5, dll.iniReadValue("Config", "playlistpath", "", inipath))
+                                setPath(0, SettingsService.loadSetting(SettingsIdentifier.PATH))
+                                setPath(1, SettingsService.loadSetting(SettingsIdentifier.LOGPATH))
+                                setPath(2, SettingsService.loadSetting(SettingsIdentifier.LYRPATH))
+                                setPath(3, SettingsService.loadSetting(SettingsIdentifier.FTPPATH))
+                                setPath(4, "")
+                                setPath(5, SettingsService.loadSetting(SettingsIdentifier.PLAYLISTPATH))
                                 Form1.savePaths()
                                 MsgBox("Restart the program to apply changes")
                                 Return False
                             End If
                         End If
                     Else
-                        Form1.inipath = tStatsFile.Text
+                        ' Form1.inipath = tStatsFile.Text
                     End If
                     setPath(0)
                     Me.Update()
@@ -385,7 +383,7 @@ Public Class OptionsForm
 
     Sub colorForm() '06.08.19
         If inipath = "" Then Return
-        Dim inverted As Boolean = dll.iniReadValue("Config", "invColors", 0, inipath)
+        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
         Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
         Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
 
@@ -482,40 +480,39 @@ Public Class OptionsForm
         Select Case index
             Case 0
                 If refString = "" Then
-                    If Not Form1.path = tMusicDir.Text Then
-                        Form1.path = tMusicDir.Text
-                        Folder.setTopFolder(Form1.path)
+                    setSetting(SettingsIdentifier.PATH, tMusicDir.Text)
+                    If Not path = tMusicDir.Text Then
+                        ' Form1.path = tMusicDir.Text
+                        Folder.setTopFolder(path)
                         Form1.localfill()
                     Else
-                        Form1.path = tMusicDir.Text
+                        'Form1.path = tMusicDir.Text
                     End If
                 Else
-                    Form1.path = refString
+                    setSetting(SettingsIdentifier.PATH, refString)
+                    '  Form1.path = refString
                 End If
             Case 1
                 If refString = "" Then
-                    Form1.logpath = tDatesFile.Text
-                Else : Form1.logpath = refString
+                    setSetting(SettingsIdentifier.LOGPATH, tDatesFile.Text) '  Form1.logpath = tDatesFile.Text
+                Else : setSetting(SettingsIdentifier.LOGPATH, refString)
                 End If
             Case 2
                 If refString = "" Then
-                    Form1.lyrpath = tLyricsDir.Text
-                Else : Form1.lyrpath = refString
+                    setSetting(SettingsIdentifier.LYRPATH, tLyricsDir.Text) ' Form1.lyrpath = tLyricsDir.Text
+                Else : setSetting(SettingsIdentifier.LYRPATH, refString)
                 End If
             Case 3
                 If refString = "" Then
-                    Form1.ftpPath = tFtpDir.Text
-                Else : Form1.ftpPath = refString
+                    setSetting(SettingsIdentifier.FTPPATH, tFtpDir.Text) ' Form1.ftpPath = tFtpDir.Text
+                Else : setSetting(SettingsIdentifier.FTPPATH, refString)
                 End If
             Case 4
-                If refString = "" Then
-
-                Else
-                End If
+                ' commPath - deprecated
             Case 5
                 If refString = "" Then
-                    Form1.playlistPath = tPlaylistFile.Text
-                Else : Form1.playlistPath = refString
+                    setSetting(SettingsIdentifier.PLAYLISTPATH, tPlaylistFile.Text) ' Form1.playlistPath = tPlaylistFile.Text
+                Else : setSetting(SettingsIdentifier.PLAYLISTPATH, refString)
                 End If
         End Select
     End Sub
@@ -540,7 +537,7 @@ Public Class OptionsForm
     Private Sub defaultclick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles defaultButton.Click
         If MsgBox("Are you sure to delete all custom key bindings?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
             For Each k As Key In Key.keyList
-                dll.iniDeleteKey("Hotkeys", k.ToString, Form1.inipath)
+                dll.iniDeleteKey(IniSection.HOTKEYS, k.ToString, inipath)
             Next
             Key.initKeys()
             reloadKeySet()
@@ -638,9 +635,9 @@ Public Class OptionsForm
             For i = 0 To listSet.Items.Count - 1
                 combiString &= listSet.Items(i).ToString().Replace(" ", "") & IIf(i < listSet.Items.Count - 1, ";", "")
             Next
-            dll.iniWriteValue("Hotkeys", currKey.ToString, combiString, Form1.inipath)
+            saveRawSetting(SettingsIdentifier.HOTKEY_MAPPING, currKey.ToString(), combiString)
         Else
-            dll.iniDeleteKey("Hotkeys", currKey.ToString, Form1.inipath)
+            dll.iniDeleteKey(IniSection.HOTKEYS, currKey.ToString, inipath)
         End If
     End Sub
 
@@ -731,12 +728,12 @@ Public Class OptionsForm
             If listAssociations.SelectedIndex > -1 Then
                 If TypeOf listAssociations.SelectedItem Is Track Then
                     Dim tr As Track = listAssociations.SelectedItem
-                    dll.iniDeleteKey("Genres", tr.name, inipath)
+                    dll.iniDeleteKey(IniSection.GENRES, tr.name, inipath)
                     listGenres.SelectedItem.tracks.remove(tr)
                     listAssociations.Items.RemoveAt(listAssociations.SelectedIndex)
                 ElseIf TypeOf listAssociations.SelectedItem Is Folder Then
                     Dim fol As Folder = listAssociations.SelectedItem
-                    dll.iniDeleteKey("Genres", fol.fullPath, inipath)
+                    dll.iniDeleteKey(IniSection.GENRES, fol.fullPath, inipath)
                     listGenres.SelectedItem.folders.remove(fol)
                     fol.genre = Genre.Undefined
                     listAssociations.Items.RemoveAt(listAssociations.SelectedIndex)
@@ -750,11 +747,11 @@ Public Class OptionsForm
             For Each it As Object In listAssociations.Items
                 If TypeOf it Is Track Then
                     Dim tr As Track = it
-                    dll.iniDeleteKey("Genres", tr.name, inipath)
+                    dll.iniDeleteKey(IniSection.GENRES, tr.name, inipath)
                     listGenres.SelectedItem.tracks.remove(tr)
                 ElseIf TypeOf it Is Folder Then
                     Dim fol As Folder = it
-                    dll.iniDeleteKey("Genres", fol.fullPath, inipath)
+                    dll.iniDeleteKey(IniSection.GENRES, fol.fullPath, inipath)
                     listGenres.SelectedItem.folders.remove(fol)
                     fol.genre = Genre.Undefined
                 End If
@@ -778,11 +775,10 @@ Public Class OptionsForm
                     Return
                 Else
                     Dim currGenre As Genre = listGenres.SelectedItem
-                    If Not dll.iniIsValidKey("Genres", tr.name, inipath) OrElse
-                        MsgBox("Track association already exists for genre " & dll.iniReadValue("Genres", tr.name, "error", inipath) & ". Overwrite?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
-                        dll.iniWriteValue("Genres", tr.name, currGenre.name, inipath)
+                    If Not dll.iniIsValidKey(IniSection.GENRES, tr.name, inipath) OrElse
+                        MsgBox("Track association already exists for genre " & loadRawSetting(SettingsIdentifier.GENRES_MAPPING, tr.name) & ". Overwrite?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
+                        saveRawSetting(SettingsIdentifier.GENRES_MAPPING, tr.name, currGenre.name)
                         refillAssociations(currGenre)
-
                     End If
                 End If
             End If
@@ -801,7 +797,7 @@ Public Class OptionsForm
                         Dim containedIn As Genre = currGenre.folderAssociationExists(currFol)
                         If containedIn.Equals(Genre.Undefined) _
                             OrElse MsgBox("Folder '" & currFol.nodePath & "'" & " already associated to Genre '" & containedIn.name & "'" & vbNewLine & "Overwrite association?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
-                            dll.iniWriteValue("Genres", currFol.fullPath, currGenre.name, inipath)
+                            saveRawSetting(SettingsIdentifier.GENRES_MAPPING, currFol.fullPath, currGenre.name)
                             refillAssociations(currGenre)
                         End If
                     End If
@@ -856,8 +852,7 @@ Public Class OptionsForm
 
     Private Sub sortingBox_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles sortingBox.SelectedIndexChanged
         If listStations.Items.Count > 0 Then
-            Form1.radioSort = sender.selectedindex
-            dll.iniWriteValue("Config", "radioSort", Form1.radioSort, inipath)
+            saveSetting(SettingsIdentifier.RADIO_SORT, sender.selectedIndex)
 
             Dim rad As Radio = Nothing
             If listStations.SelectedItem IsNot Nothing Then
@@ -902,7 +897,7 @@ Public Class OptionsForm
             TopMost = False
             Dim a As String = InputBox("Paste new URL to overwrite existing URL", , listStations.SelectedItem.url)
             If Not a = "" Then
-                dll.iniWriteValue("Radio", listStations.SelectedItem.name, a, inipath)
+                saveRawSetting(SettingsIdentifier.RADIO_STATIONS, listStations.SelectedItem.name, a)
                 listStations.SelectedItem.url = a
                 labelUrl.Text = "URL: " & listStations.SelectedItem.url
             End If
@@ -915,15 +910,15 @@ Public Class OptionsForm
             TopMost = False
             Dim a As String = InputBox("Type in new name", , listStations.SelectedItem.name)
             If Not a = "" And Not a = listStations.SelectedItem.name Then
-                dll.iniRenameKey("Radio", listStations.SelectedItem.name, a, inipath)
-                dll.iniRenameKey("RadioTime", listStations.SelectedItem.name, a, inipath)
+                dll.iniRenameKey(IniSection.RADIO, listStations.SelectedItem.name, a, inipath)
+                dll.iniRenameKey(IniSection.RADIO_TIME, listStations.SelectedItem.name, a, inipath)
             End If
             TopMost = True
         End If
     End Sub
     Private Sub remButton4_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles remButton4.Click
         If Not listStations.SelectedItem Is Nothing Then
-            dll.iniDeleteKey("Radio", listStations.SelectedItem.name)
+            dll.iniDeleteKey(IniSection.RADIO, listStations.SelectedItem.name)
             Dim ind As Integer = listStations.SelectedIndex
             listStations.Items.Remove(listStations.SelectedItem)
             If listStations.Items.Count > 0 Then listStations.SelectedIndex = IIf(ind < listStations.Items.Count, ind, listStations.Items.Count - 1)
@@ -938,7 +933,7 @@ Public Class OptionsForm
             If Not b = "" Then
                 Dim rad As New Radio(a, b)
                 listStations.Items.Add(rad)
-                dll.iniWriteValue("Radio", rad.name, rad.url, inipath)
+                saveRawSetting(SettingsIdentifier.RADIO_STATIONS, rad.name, rad.url)
             End If
         End If
         TopMost = True
@@ -947,15 +942,15 @@ Public Class OptionsForm
 
 #Region "Remote"
     Private Sub checkEnableStartup_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles checkEnableStartup.CheckedChanged
-        dll.iniWriteValue("Config", "remote", Math.Abs(CInt(sender.checked)))
+        SettingsService.saveSetting(SettingsIdentifier.REMOTE, sender.checked)
     End Sub
 
     Private Sub checkBlockExtIps_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles checkBlockExtIps.CheckedChanged
-        dll.iniWriteValue("Config", "remoteBlockExtIps", Math.Abs(CInt(sender.checked)))
+        SettingsService.saveSetting(SettingsIdentifier.REMOTE_BLOCK_EXT_IPS, sender.checked)
     End Sub
 
     Private Sub checkBlockMessages_CheckedChanged(sender As Object, e As EventArgs) Handles checkBlockMessages.CheckedChanged
-        dll.iniWriteValue("Config", "remoteBlockMessages", Math.Abs(CInt(sender.checked)))
+        SettingsService.saveSetting(SettingsIdentifier.REMOTE_BLOCK_MESSAGES, sender.checked)
     End Sub
     Private Sub listPairedIps_SelectedIndexChanged(sender As Object, e As EventArgs) Handles listPairedIps.SelectedIndexChanged
         stopConnectionButton.Enabled = (listPairedIps.SelectedIndex > -1)
@@ -1060,7 +1055,7 @@ Public Class OptionsForm
 
 #Region "Update"
     Private Sub checkAutoUpdate_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles checkAutoUpdate.CheckedChanged
-        dll.iniWriteValue("Config", "ftpAutoUpdate", Math.Abs(CInt(sender.checked)))
+        SettingsService.saveSetting(SettingsIdentifier.FTP_AUTO_UPDATE, sender.checked)
     End Sub
 
     Private Sub publishRemButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles publishRemButton.Click
@@ -1069,7 +1064,7 @@ Public Class OptionsForm
             dll.publishFileList.Remove(listPublish.SelectedItem)
             listPublish.Items.RemoveAt(selIndex)
             listPublish.SelectedIndex = IIf(selIndex < listPublish.Items.Count, selIndex, IIf(listPublish.Items.Count > 0, 0, -1))
-            dll.iniWriteValue("Config", "ftpPublish", getPublishFiles(True), inipath)
+            SettingsService.saveSetting(SettingsIdentifier.FTP_PUBLISH, getPublishFiles(True))
         End If
     End Sub
     Private Sub publishAddButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles publishAddButton.Click
@@ -1099,7 +1094,7 @@ Public Class OptionsForm
             If Not err = "" Then
                 MsgBox(err = "Failed to add following files to publishing list:" & vbNewLine & vbNewLine & err)
             Else
-                dll.iniWriteValue("Config", "ftpPublish", getPublishFiles(True), inipath)
+                SettingsService.saveSetting(SettingsIdentifier.FTP_PUBLISH, getPublishFiles(True))
             End If
         End If
     End Sub
@@ -1121,12 +1116,12 @@ Public Class OptionsForm
     Private Sub publishButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles publishButton.Click
         If dll.ftpThread IsNot Nothing AndAlso dll.ftpThread.IsAlive Then dll.ftpThread.Abort()
         If Not dll.req.IsBusy Then
-            If Form1.isValidDirectoryPath(Form1.ftpPath) Then
+            If Form1.isValidDirectoryPath(ftpPath) Then
                 addCoreFiles()
                 For Each pubItem As String In listPublish.Items
                     dll.publishFileList.Add(pubItem)
                 Next
-                Dim pub As String = dll.publishPlayer(Form1.ftpPath)
+                Dim pub As String = dll.publishPlayer(ftpPath)
                 If Char.IsDigit(pub(0)) Then
                     labelPublishedVersion.Text = pub
                 Else
@@ -1153,9 +1148,9 @@ Public Class OptionsForm
     End Sub
 
     Sub credentialsUpdate()
-        dll.iniWriteValue("Config", "ftpIp", tftpIp.Text, inipath)
-        dll.iniWriteValue("Config", "ftpUser", tftpUser.Text, inipath)
-        dll.iniWriteValue("Config", "ftpPw", tftpPw.Text, inipath)
+        SettingsService.saveSetting(SettingsIdentifier.FTP_IP, tftpIp.Text)
+        SettingsService.saveSetting(SettingsIdentifier.FTP_USER, tftpUser.Text)
+        SettingsService.saveSetting(SettingsIdentifier.FTP_PW, tftpPw.Text)
 
         dll.ftpCred.ip = tftpIp.Text
         dll.ftpCred.user = tftpUser.Text
@@ -1278,10 +1273,11 @@ Public Class OptionsForm
     End Sub
 
     Private Sub logPathKeyButton_Click(sender As Object, e As EventArgs) Handles logPathKeyPic.Click
-        Dim key As String = InputBox("Type in decryption key", , Form1.logPathKey)
-        If key <> Form1.logPathKey Then
-            SaveSetting("mp3player", "Config", "logPathKey", key)
-            Form1.logPathKey = key
+        Dim key As String = InputBox("Type in decryption key", , logPathKey)
+        If key <> logPathKey Then
+            ' Interaction.SaveSetting("mp3player", "Config", "logPathKey", key)
+            '   Form1.logPathKey = key
+            saveSetting(SettingsIdentifier.LOG_PATH_KEY, key)
         End If
     End Sub
 
@@ -1585,39 +1581,39 @@ Public Class OptionsForm
     End Function
 
     Private Sub buttonFolderFont_Click(sender As Object, e As EventArgs) Handles buttonFolderFont.Click
-        saveFont(Form1.tv, "fontFolders")
+        saveFont(Form1.tv, SettingsIdentifier.FONT_FOLDERS)
     End Sub
 
     Private Sub buttonLyricsFont_Click(sender As Object, e As EventArgs) Handles buttonLyricsFont.Click
-        saveFont(LyricsForm.tLyrics, "fontLyrics")
+        saveFont(LyricsForm.tLyrics, SettingsIdentifier.FONT_LYRICS)
     End Sub
 
     Private Sub buttonTrackFont_Click(sender As Object, e As EventArgs) Handles buttonTrackFont.Click
-        Dim f As Font = saveFont(Form1.l2, "fontTracks")
+        Dim f As Font = saveFont(Form1.l2, SettingsIdentifier.FONT_TRACKS)
         Form1.l2.Font = f
         Form1.l2_2.Font = f
     End Sub
 
-    Function saveFont(control As Control, iniKey As String) As Font
+    Function saveFont(control As Control, iniKey As SettingsIdentifier) As Font
         Return saveFont(control, getFontDialogResult(control.Font), iniKey)
     End Function
-    Function saveFont(control As Control, font As Font, iniKey As String) As Font
+    Function saveFont(control As Control, font As Font, iniKey As SettingsIdentifier) As Font
         Try
             control.Font = font
         Catch ex As Exception
         End Try
-        dll.iniWriteValue("Config", iniKey, font.FontFamily.Name & ";" & CInt(font.Style) & ";" & CInt(font.Size), inipath)
+        Dim fontValue As String = font.FontFamily.Name & ";" & CInt(font.Style) & ";" & CInt(font.Size)
+        SettingsService.saveSetting(iniKey, fontValue)
         Return font
     End Function
 
     Private Sub checkDarkTheme_Click(sender As Object, e As EventArgs) Handles checkDarkTheme.Click
-        Form1.colorForm(Form1.locked, sender.checked)
+        Form1.colorForm(formLocked, sender.checked)
         colorForm()
     End Sub
 
     Private Sub checkSavePos_Click(sender As Object, e As EventArgs) Handles checkSavePos.Click
-        dll.iniWriteValue("Config", "SaveWinPosSize", Math.Abs(CInt(sender.checked)), inipath)
-        Form1.saveWinPosSize = sender.checked
+        saveSetting(SettingsIdentifier.SAVE_WIN_POS_SIZE, sender.checked)
     End Sub
 
     Private Sub buttonResetWinPos_Click(sender As Object, e As EventArgs) Handles buttonResetWinPos.Click
@@ -1671,18 +1667,15 @@ Public Class OptionsForm
         Form1.wmp.ShowPropertyPages()
     End Sub
     Private Sub checkRandomNextTrack_Click(sender As Object, e As EventArgs) Handles checkRandomNextTrack.Click
-        dll.iniWriteValue("Config", "randomNextTrack", Math.Abs(CInt(sender.checked)), inipath)
-        Form1.randomNextTrack = sender.checked
+        saveSetting(SettingsIdentifier.RANDOM_NEXT_TRACK, sender.checked)
     End Sub
 
     Private Sub checkRemoveTrackFromList_Click(sender As Object, e As EventArgs) Handles checkRemoveTrackFromList.Click
-        dll.iniWriteValue("Config", "removeNextTrack", Math.Abs(CInt(sender.checked)), inipath)
-        Form1.removeNextTrack = sender.checked
+        saveSetting(SettingsIdentifier.REMOVE_NEXT_TRACK, sender.checked)
     End Sub
 
     Private Sub checkPlaylistHistory_Click(sender As Object, e As EventArgs) Handles checkPlaylistHistory.Click
-        dll.iniWriteValue("Config", "savePlaylistHistory", Math.Abs(CInt(sender.checked)), inipath)
-        Form1.savePlaylistHistory = sender.checked
+        saveSetting(SettingsIdentifier.PLAYLIST_SAVE_HISTORY, sender.checked)
     End Sub
 
     Private Sub checkRandomNextTrack_CheckedChanged(sender As Object, e As EventArgs) Handles checkRandomNextTrack.CheckedChanged
