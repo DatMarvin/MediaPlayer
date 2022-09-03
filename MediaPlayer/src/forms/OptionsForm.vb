@@ -76,7 +76,7 @@ Public Class OptionsForm
         Me.Size = New Size(325 + listMenu.Width, 300)
         Me.Location = New Point(Form1.Left + Form1.Width / 2 - Me.Width / 2, Form1.Top + Form1.Height / 2 - Me.Height / 2)
         labelMenu.Text = ""
-        colorForm()
+        FormUtils.colorForm(Me)
         Form1.cancelSearch()
         If state = optionState.NONE Then
             If Form1.lastOptionsState = optionState.NONE Then
@@ -209,7 +209,7 @@ Public Class OptionsForm
                 labelftpTotalProg.Text = "0 / 0"
                 labelPublishedVersion.Text = ""
                 addCoreFiles()
-                Dim publ() As String = SettingsService.loadSetting(SettingsIdentifier.FTP_AUTO_UPDATE).Split(";")
+                Dim publ() As String = SettingsService.loadSetting(SettingsIdentifier.FTP_PUBLISH).Split(";")
                 If publ IsNot Nothing Then
                     For i = 0 To publ.Length - 1
                         If Not publ(i) = "" Then
@@ -380,46 +380,6 @@ Public Class OptionsForm
 
 
 #Region "General"
-
-    Sub colorForm() '06.08.19
-        If inipath = "" Then Return
-        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
-        Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
-        Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
-
-        Dim invLightCol As Color = IIf(Not inverted, Color.Black, Color.White)
-        Dim invDarkCol As Color = IIf(Not inverted, Color.Black, Color.FromArgb(255, 240, 240, 240))
-
-        Dim elements As New List(Of Control)
-        elements.Add(Me)
-        For Each c As Control In Me.Controls
-            elements.Add(c)
-            For Each subControl As Control In c.Controls
-                elements.Add(subControl)
-                For Each subSubControl As Control In subControl.Controls
-                    elements.Add(subSubControl)
-                    For Each subSubSubControl As Control In subSubControl.Controls
-                        elements.Add(subSubSubControl)
-                    Next
-                Next
-            Next
-        Next
-
-        For Each c As Control In elements
-            If TypeOf c Is ListBox Then
-                c.BackColor = lightCol
-                c.ForeColor = invLightCol
-            ElseIf TypeOf c Is Button Then
-                CType(c, Button).FlatStyle = FlatStyle.System
-                c.BackColor = lightCol
-                c.ForeColor = invLightCol
-            Else
-                c.BackColor = darkCol
-                c.ForeColor = invDarkCol
-            End If
-
-        Next
-    End Sub
 
     Private Sub listMenu_MouseClick(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles listMenu.MouseClick
         Dim it As Integer = sender.IndexFromPoint(New Point(Cursor.Position.X - sender.PointToScreen(New Point(sender.Left, sender.Top)).X + sender.Left, Cursor.Position.Y - sender.PointToScreen(New Point(sender.Left, sender.Top)).Y + sender.top))
@@ -974,7 +934,7 @@ Public Class OptionsForm
     Private Sub stopButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles stopButton.Click
         If Not remoteTcp.stopListener() Then MsgBox("Failure")
         setListenerStatus()
-        Form1.setRemoteImage()
+        FormUtils.setRemoteImage()
     End Sub
 
     Private Sub resetButton2_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles resetButton2.Click
@@ -1608,8 +1568,9 @@ Public Class OptionsForm
     End Function
 
     Private Sub checkDarkTheme_Click(sender As Object, e As EventArgs) Handles checkDarkTheme.Click
-        Form1.colorForm(formLocked, sender.checked)
-        colorForm()
+        saveSetting(SettingsIdentifier.DARK_THEME, sender.checked)
+        FormUtils.colorForm(Form1)
+        FormUtils.colorForm(Me)
     End Sub
 
     Private Sub checkSavePos_Click(sender As Object, e As EventArgs) Handles checkSavePos.Click
@@ -1683,6 +1644,10 @@ Public Class OptionsForm
     End Sub
 
     Private Sub checkSavePos_CheckedChanged(sender As Object, e As EventArgs) Handles checkSavePos.CheckedChanged
+
+    End Sub
+
+    Private Sub checkDarkTheme_CheckedChanged(sender As Object, e As EventArgs) Handles checkDarkTheme.CheckedChanged
 
     End Sub
 

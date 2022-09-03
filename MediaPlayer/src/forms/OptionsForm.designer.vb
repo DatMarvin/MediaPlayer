@@ -114,6 +114,8 @@ Partial Class OptionsForm
         Me.Label12 = New System.Windows.Forms.Label()
         Me.labelCurrVersion = New System.Windows.Forms.Label()
         Me.g2 = New System.Windows.Forms.GroupBox()
+        Me.logPathReloadPic = New System.Windows.Forms.PictureBox()
+        Me.logPathKeyPic = New System.Windows.Forms.PictureBox()
         Me.Label20 = New System.Windows.Forms.Label()
         Me.Label19 = New System.Windows.Forms.Label()
         Me.Label18 = New System.Windows.Forms.Label()
@@ -175,8 +177,6 @@ Partial Class OptionsForm
         Me.FontDlg = New System.Windows.Forms.FontDialog()
         Me.g7 = New System.Windows.Forms.GroupBox()
         Me.gadgetFormButton = New System.Windows.Forms.Button()
-        Me.logPathReloadPic = New System.Windows.Forms.PictureBox()
-        Me.logPathKeyPic = New System.Windows.Forms.PictureBox()
         Me.groupCommand.SuspendLayout()
         Me.groupModifierKey.SuspendLayout()
         Me.groupMainKey.SuspendLayout()
@@ -195,6 +195,8 @@ Partial Class OptionsForm
         Me.g9.SuspendLayout()
         Me.groupVersion.SuspendLayout()
         Me.g2.SuspendLayout()
+        CType(Me.logPathReloadPic, System.ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.logPathKeyPic, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.g6.SuspendLayout()
         Me.groupViewMode.SuspendLayout()
         Me.groupPlaylists.SuspendLayout()
@@ -204,8 +206,6 @@ Partial Class OptionsForm
         CType(Me.trackbarPlayRate, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.trackbarBalance, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.g7.SuspendLayout()
-        CType(Me.logPathReloadPic, System.ComponentModel.ISupportInitialize).BeginInit()
-        CType(Me.logPathKeyPic, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'commandBox
@@ -1140,6 +1140,28 @@ Partial Class OptionsForm
         Me.g2.TabStop = False
         Me.g2.Text = "Paths"
         '
+        'logPathReloadPic
+        '
+        Me.logPathReloadPic.BackgroundImage = Global.MediaPlayer.My.Resources.Resources.rel
+        Me.logPathReloadPic.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
+        Me.logPathReloadPic.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.logPathReloadPic.Location = New System.Drawing.Point(267, 144)
+        Me.logPathReloadPic.Name = "logPathReloadPic"
+        Me.logPathReloadPic.Size = New System.Drawing.Size(30, 27)
+        Me.logPathReloadPic.TabIndex = 56
+        Me.logPathReloadPic.TabStop = False
+        '
+        'logPathKeyPic
+        '
+        Me.logPathKeyPic.BackgroundImage = Global.MediaPlayer.My.Resources.Resources.unlock
+        Me.logPathKeyPic.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
+        Me.logPathKeyPic.Cursor = System.Windows.Forms.Cursors.Hand
+        Me.logPathKeyPic.Location = New System.Drawing.Point(233, 144)
+        Me.logPathKeyPic.Name = "logPathKeyPic"
+        Me.logPathKeyPic.Size = New System.Drawing.Size(30, 27)
+        Me.logPathKeyPic.TabIndex = 55
+        Me.logPathKeyPic.TabStop = False
+        '
         'Label20
         '
         Me.Label20.AutoSize = True
@@ -1739,28 +1761,6 @@ Partial Class OptionsForm
         Me.gadgetFormButton.Text = "Open Gadget Window"
         Me.gadgetFormButton.UseVisualStyleBackColor = True
         '
-        'logPathReloadPic
-        '
-        Me.logPathReloadPic.BackgroundImage = Global.MediaPlayer.My.Resources.Resources.rel
-        Me.logPathReloadPic.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
-        Me.logPathReloadPic.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.logPathReloadPic.Location = New System.Drawing.Point(267, 144)
-        Me.logPathReloadPic.Name = "logPathReloadPic"
-        Me.logPathReloadPic.Size = New System.Drawing.Size(30, 27)
-        Me.logPathReloadPic.TabIndex = 56
-        Me.logPathReloadPic.TabStop = False
-        '
-        'logPathKeyPic
-        '
-        Me.logPathKeyPic.BackgroundImage = Global.MediaPlayer.My.Resources.Resources.unlock
-        Me.logPathKeyPic.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
-        Me.logPathKeyPic.Cursor = System.Windows.Forms.Cursors.Hand
-        Me.logPathKeyPic.Location = New System.Drawing.Point(233, 144)
-        Me.logPathKeyPic.Name = "logPathKeyPic"
-        Me.logPathKeyPic.Size = New System.Drawing.Size(30, 27)
-        Me.logPathKeyPic.TabIndex = 55
-        Me.logPathKeyPic.TabStop = False
-        '
         'OptionsForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -1807,6 +1807,8 @@ Partial Class OptionsForm
         Me.groupVersion.PerformLayout()
         Me.g2.ResumeLayout(False)
         Me.g2.PerformLayout()
+        CType(Me.logPathReloadPic, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.logPathKeyPic, System.ComponentModel.ISupportInitialize).EndInit()
         Me.g6.ResumeLayout(False)
         Me.g6.PerformLayout()
         Me.groupViewMode.ResumeLayout(False)
@@ -1821,8 +1823,6 @@ Partial Class OptionsForm
         CType(Me.trackbarPlayRate, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.trackbarBalance, System.ComponentModel.ISupportInitialize).EndInit()
         Me.g7.ResumeLayout(False)
-        CType(Me.logPathReloadPic, System.ComponentModel.ISupportInitialize).EndInit()
-        CType(Me.logPathKeyPic, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 

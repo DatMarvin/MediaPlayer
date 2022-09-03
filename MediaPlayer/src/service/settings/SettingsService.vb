@@ -407,11 +407,6 @@ Public Module SettingsService
             Return True
         End Function
 
-        Shared Function colorForm(value As String) As Boolean
-            Form1.colorForm(False, value)
-            Return True
-        End Function
-
         Shared Function loadFontTracks(value As String) As Boolean
             Form1.setFont(Form1.l2, value)
             Form1.setFont(Form1.l2_2, value)

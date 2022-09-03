@@ -1,7 +1,6 @@
 ﻿Public Class IniSetting(Of T)
     Implements ISetting
 
-
     Dim iniPath As String
     Dim bufferSize As Integer
 

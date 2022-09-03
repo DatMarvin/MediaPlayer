@@ -139,6 +139,7 @@
     <Compile Include="src\service\settings\SettingsService.vb" />
     <Compile Include="src\service\gadgets\ClickGadget.vb" />
     <Compile Include="src\utils\AsyncTask.vb" />
+    <Compile Include="src\utils\FormUtils.vb" />
     <Compile Include="src\utils\Utils.vb" />
     <Compile Include="src\business\Folder.vb" />
     <Compile Include="src\forms\Form1.vb">

@@ -36,7 +36,7 @@ Public Class LyricsForm
     Private Sub LyricsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Dim yNorm As Integer = Form1.Top + Form1.Height / 2 - Me.Height / 2
         Me.Location = New Point(Math.Min(My.Computer.Screen.WorkingArea.Width, Form1.Right + Width) - Width, yNorm + Math.Max(0, 0 - yNorm) + Math.Min(0, My.Computer.Screen.WorkingArea.Height - (yNorm + Height)))
-        colorForm()
+        FormUtils.colorForm(Me)
         setState(lyricState.INIT)
 
         checkAutoSave.Checked = lyricsAutoSave
@@ -47,44 +47,6 @@ Public Class LyricsForm
             saveLyrics(Not lyricsAutoSave)
         End If
         overlayMode -= Form1.eOverlayMode.LYRICS
-    End Sub
-
-    Sub colorForm()
-        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
-        Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
-        Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
-
-        Dim invLightCol As Color = IIf(Not inverted, Color.Black, Color.White)
-        Dim invDarkCol As Color = IIf(Not inverted, Color.Black, Color.FromArgb(255, 240, 240, 240))
-
-        Dim elements As New List(Of Control)
-        elements.Add(Me)
-        For Each c As Control In Me.Controls
-            elements.Add(c)
-            For Each subControl As Control In c.Controls
-                elements.Add(subControl)
-                For Each subSubControl As Control In subControl.Controls
-                    elements.Add(subSubControl)
-                    For Each subSubSubControl As Control In subSubControl.Controls
-                        elements.Add(subSubSubControl)
-                    Next
-                Next
-            Next
-        Next
-
-        For Each c As Control In elements
-            If TypeOf c Is ListBox Or TypeOf c Is TreeView Or TypeOf c Is ListView Or TypeOf c Is TextBox Then
-                c.BackColor = lightCol
-                c.ForeColor = invLightCol
-            ElseIf TypeOf c Is Button Then
-                CType(c, Button).FlatStyle = FlatStyle.System
-                c.BackColor = lightCol
-                c.ForeColor = invLightCol
-            Else
-                c.BackColor = darkCol
-                c.ForeColor = invDarkCol
-            End If
-        Next
     End Sub
 
     Sub updateUI()
@@ -195,7 +157,7 @@ Public Class LyricsForm
 1:          If state = lyricState.MODIFIED Then
                 If writeLyricsStream() Then
                     setState(lyricState.READ)
-                    Form1.setLyricsImage()
+                    FormUtils.setLyricsImage()
                 Else
                     If MsgBox("Failed to write to file. Try again?", MsgBoxStyle.YesNo + MsgBoxStyle.Critical, "Lyrics Manager") = MsgBoxResult.Yes Then
                         GoTo 1

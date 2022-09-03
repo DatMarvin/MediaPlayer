@@ -93,67 +93,6 @@ Public Class Form1
         TcpStopAllConnections("close", False)
     End Sub
 
-    Sub colorForm(ByVal lock As Boolean, Optional ByVal inverted As Boolean = False) '06.03.2017
-        setSetting(SettingsIdentifier.DARK_THEME, inverted)
-        'darkTheme = inverted
-
-        Dim lightCol As Color = IIf(inverted, Color.FromArgb(35, 35, 35), Color.White)
-        Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
-
-        Dim invLightCol As Color = IIf(Not inverted, Color.Black, Color.White)
-        Dim invDarkCol As Color = IIf(Not inverted, Color.Black, Color.FromArgb(255, 240, 240, 240))
-
-        If lock Then
-            lightCol = Color.DimGray
-            darkCol = Color.DimGray
-            invLightCol = Color.Black
-            invDarkCol = Color.Black
-        End If
-
-        Dim elements() As Control = {Me, menuStrip, con1, con2, labelPartName, labelPartsCount, labelPartsCount2, labelLoop, labelCount, labelCount2, labelDateAdded, labelDateAdded2,
-                                      labelPopularity, labelPopularity2, labelTimeListened2, labelTimeListened, labelGenre2, labelGenre, labelLength2, labelLength, checkSeachAllFolders, checkSearchParts}
-        For Each c As Control In elements
-            c.BackColor = darkCol
-            c.ForeColor = invDarkCol
-
-        Next
-        Dim lists() As Control = {tv, l2, l2_2, tSearch, labelL2_2Count, labelL2Count}
-        For Each c As Control In lists
-            c.BackColor = lightCol
-            c.ForeColor = invLightCol
-        Next
-        tSearch.ForeColor = IIf(searchState = SearchState.NONE, Color.DimGray, IIf(inverted, Color.White, Color.Black))
-
-        labelNextTrack.BackColor = Color.White 'nexttrack
-        labelPrevTrack.BackColor = Color.White 'prevtrack
-        labelVolume.BackColor = Color.FromArgb(240, 240, 240) 'vol
-
-        'If Not lock Then menuSettingsInvertColors.Checked = inverted 'save inv state when locked
-
-        setMenuIcons()
-    End Sub
-
-    Public ReadOnly Property getLightColor() As Color
-        Get
-            Return IIf(formLocked, Color.DimGray, IIf(darkTheme, Color.FromArgb(50, 50, 50), Color.White))
-        End Get
-    End Property
-    Public ReadOnly Property getDarkColor() As Color
-        Get
-            Return IIf(formLocked, Color.DimGray, IIf(darkTheme, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240)))
-        End Get
-    End Property
-    Public ReadOnly Property getInvLightColor() As Color
-        Get
-            Return IIf(formLocked, Color.Black, IIf(Not darkTheme, Color.Black, Color.White))
-        End Get
-    End Property
-    Public ReadOnly Property getInvDarkColor() As Color
-        Get
-            Return IIf(formLocked, Color.Black, IIf(Not darkTheme, Color.Black, Color.FromArgb(255, 240, 240, 240)))
-        End Get
-    End Property
-
     Private Sub Form1_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles Me.KeyDown
         If e.KeyCode = Keys.F8 Then e.Handled = True
     End Sub
@@ -187,7 +126,7 @@ Public Class Form1
         wmp.settings.rate = playRate
 
         formResize()
-        colorForm(formLocked, darkTheme)
+        FormUtils.colorForm(Me)
 
         executeAutoStarts()
         If keylogger Then
@@ -884,8 +823,8 @@ Public Class Form1
 #Region "Settings"
     Sub lockFormSwitch()
         setSetting(SettingsIdentifier.FORM_LOCKED, Not getSetting(SettingsIdentifier.FORM_LOCKED))
-        colorForm(formLocked, darkTheme)
-        setLockImage()
+        FormUtils.colorForm(Me)
+        FormUtils.setLockImage()
         If formLocked Then
             keyt.Stop()
             lockChange = True
@@ -895,58 +834,7 @@ Public Class Form1
             keydelayt.Start()
         End If
     End Sub
-    Sub setLockImage()
-        If formLocked Then
-            menuLock.Image = IIf(darkTheme, My.Resources.unlock_inv, My.Resources.unlock)
-            menuLock.ToolTipText = "Unlock Hotkeys"
-        Else
-            menuLock.Image = IIf(darkTheme, My.Resources.lock_inv, My.Resources.lock)
-            menuLock.ToolTipText = "Lock Hotkeys"
-        End If
-    End Sub
-    Public Sub setRemoteImage()
-        If remoteTcp.isEstablished Then
-            menuRemote.Image = IIf(darkTheme, My.Resources.online_inv, My.Resources.online)
-            menuRemote.ToolTipText = "Status: Connected"
-        Else
-            If remoteTcp.isListenerActive Then
-                menuRemote.Image = IIf(darkTheme, My.Resources.offline_inv, My.Resources.offline)
-                menuRemote.ToolTipText = "Status: Ready"
-            Else
-                menuRemote.Image = IIf(darkTheme, My.Resources.blocked_inv, My.Resources.blocked)
-                menuRemote.ToolTipText = "Status: Blocked"
-            End If
 
-        End If
-    End Sub
-    Sub setLyricsImage()
-        Dim l As ListBox = getSelectedList()
-        If radioEnabled Or l Is Nothing OrElse l.SelectedIndex = -1 OrElse TypeOf l.SelectedItem IsNot Track Then
-            menuLyrics.Image = IIf(darkTheme, My.Resources.cross_inv, My.Resources.cross)
-        Else
-            Dim track As Track = l.SelectedItem
-            If LyricsForm.hasLyrics(track) Then
-                menuLyrics.Image = IIf(darkTheme, My.Resources.tick_inv, My.Resources.tick)
-            Else
-                menuLyrics.Image = IIf(darkTheme, My.Resources.cross_inv, My.Resources.cross)
-            End If
-        End If
-    End Sub
-    Sub setSettingsImage()
-        menuSettings.Image = IIf(darkTheme, My.Resources.settings_inv, My.Resources.settings)
-    End Sub
-
-    Sub setGadgetsImage()
-        menuGadgets.Image = IIf(darkTheme, My.Resources.gadgets_inv, My.Resources.gadgets)
-    End Sub
-
-    Sub setMenuIcons()
-        setLockImage()
-        setRemoteImage()
-        setSettingsImage()
-        setLyricsImage()
-        setGadgetsImage()
-    End Sub
 
 
     Private Sub menuIcons_MouseHover(sender As Object, e As EventArgs) Handles menuLock.MouseHover, menuRemote.MouseHover, menuSettings.MouseHover, menuGadgets.MouseHover
@@ -1474,8 +1362,8 @@ Public Class Form1
                     End If
                 End If
             ElseIf TypeOf sender Is Button Then
-                sender.BackColor = getInvLightColor()
-                sender.foreColor = getDarkColor()
+                sender.BackColor = FormUtils.getInvLightColor()
+                sender.foreColor = FormUtils.getDarkColor()
             End If
 
             tt.Hide(Me)
@@ -1495,8 +1383,8 @@ Public Class Form1
         If Not sender.Equals(dragList) Then sender.selectedIndex = -1
     End Sub
     Private Sub button_DragLeave(ByVal sender As Object, ByVal e As System.EventArgs) Handles dragDropNextField.DragLeave, dragDropQueueField.DragLeave
-        sender.BackColor = getDarkColor()
-        sender.foreColor = getInvDarkColor()
+        sender.BackColor = FormUtils.getDarkColor()
+        sender.foreColor = FormUtils.getInvDarkColor()
     End Sub
 
     Private Sub dd_MouseUp(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles l2.MouseUp, l2_2.MouseUp
@@ -1583,7 +1471,7 @@ Public Class Form1
         Else
             'clear stats labels?
         End If
-        setLyricsImage()
+        FormUtils.setLyricsImage()
         If Not l2.SelectedIndex = -1 And sender.Equals(l2) And dragList Is Nothing Then l2_2.SelectedIndex = -1
     End Sub
 
@@ -3331,14 +3219,14 @@ Public Class Form1
     Sub TcpStartListener(ByVal port As Integer, Optional ByVal errorMsg As Boolean = True)
         If remoteTcp.startListener(port) Then
             OptionsForm.labelPort.Text = remoteTcp.port
-            setRemoteImage()
+            FormUtils.setRemoteImage()
             OptionsForm.setListenerStatus()
 
             TcpListen()
         Else
             OptionsForm.labelPort.Text = port
             remoteTcp.port = port
-            setRemoteImage()
+            FormUtils.setRemoteImage()
             remoteTcp.stopListener()
             OptionsForm.setListenerStatus()
             If errorMsg Then MsgBox("Port is not open", MsgBoxStyle.Exclamation)
@@ -3381,7 +3269,7 @@ Public Class Form1
             If showErr Then MsgBox(reason & ": client close failed")
         End If
         OptionsForm.refreshRemoteUI()
-        setRemoteImage()
+        FormUtils.setRemoteImage()
     End Sub
 
     Async Sub TcpListen()
@@ -3395,7 +3283,7 @@ Public Class Form1
                         remoteTcp.stopConnection(remoteTcp.getIp(res.client))
                     Else
                         If remoteTcp.establishConnection(res.client).resultCode = 2 Then
-                            setRemoteImage()
+                            FormUtils.setRemoteImage()
                             OptionsForm.refreshRemoteUI()
 
                         End If
@@ -3404,7 +3292,7 @@ Public Class Form1
                     remoteTcp.stopConnection(remoteTcp.getIp(res.client))
                 End If
             ElseIf res.resultCode = 2 Then
-                setRemoteImage()
+                FormUtils.setRemoteImage()
                 OptionsForm.refreshRemoteUI()
             ElseIf res.resultCode = 3 Then
                 Exit Do

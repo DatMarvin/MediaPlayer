@@ -20,7 +20,7 @@ Public Class StatsForm
 
     Private Sub StatsForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.Location = New Point(Form1.Left + Form1.Width / 2 - Me.Width / 2, Form1.Top + Form1.Height / 2 - Me.Height / 2 + 15)
-        colorForm()
+        FormUtils.colorForm(Me)
     End Sub
 
 
@@ -131,44 +131,6 @@ Public Class StatsForm
                 insTv(currNode.Nodes.Add(currFolder.children(i).nodePath, currFolder.children(i).name), currFolder.children(i))
             Next
         End If
-    End Sub
-
-    Sub colorForm()
-        Dim inverted As Boolean = SettingsService.getSetting(SettingsIdentifier.DARK_THEME)
-        Dim lightCol As Color = IIf(inverted, Color.FromArgb(50, 50, 50), Color.White)
-        Dim darkCol As Color = IIf(inverted, Color.FromArgb(20, 20, 20), Color.FromArgb(255, 240, 240, 240))
-
-        Dim invLightCol As Color = IIf(Not inverted, Color.Black, Color.White)
-        Dim invDarkCol As Color = IIf(Not inverted, Color.Black, Color.FromArgb(255, 240, 240, 240))
-
-        Dim elements As New List(Of Control)
-        elements.Add(Me)
-        For Each c As Control In Me.Controls
-            elements.Add(c)
-            For Each subControl As Control In c.Controls
-                elements.Add(subControl)
-                For Each subSubControl As Control In subControl.Controls
-                    elements.Add(subSubControl)
-                    For Each subSubSubControl As Control In subSubControl.Controls
-                        elements.Add(subSubSubControl)
-                    Next
-                Next
-            Next
-        Next
-
-        For Each c As Control In elements
-            If TypeOf c Is ListBox Or TypeOf c Is TreeView Or TypeOf c Is ListView Then
-                c.BackColor = lightCol
-                c.ForeColor = invLightCol
-            ElseIf TypeOf c Is Button Then
-                CType(c, Button).FlatStyle = FlatStyle.System
-                c.BackColor = lightCol
-                c.ForeColor = invLightCol
-            Else
-                c.BackColor = darkCol
-                c.ForeColor = invDarkCol
-            End If
-        Next
     End Sub
 
     Async Function loadTrackStats() As Threading.Tasks.Task
