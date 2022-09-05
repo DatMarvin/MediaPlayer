@@ -139,14 +139,14 @@ Public Class PartsForm
         Try
             For i = 0 To currTrack.partsCount - 1
                 Dim tp As TrackPart = currTrack.parts(i)
-                dll.iniWriteValue(i + 1, "time", tp.fromFormat & "," & tp.toFormat, path)
+                IniService.iniWriteValue(i + 1, "time", tp.fromFormat & "," & tp.toFormat, path)
                 If tp.name = "" Then
-                    dll.iniDeleteKey(i + 1, "name", path)
+                    IniService.iniDeleteKey(i + 1, "name", path)
                 Else
-                    dll.iniWriteValue(i + 1, "name", tp.name, path)
+                    IniService.iniWriteValue(i + 1, "name", tp.name, path)
                 End If
             Next
-            dll.iniDeleteSection(currTrack.partsCount + 1, path)
+            IniService.iniDeleteSection(currTrack.partsCount + 1, path)
         Catch ex As Exception
             Return False
         End Try

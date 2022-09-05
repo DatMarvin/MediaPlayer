@@ -130,7 +130,9 @@
     <Compile Include="src\business\enums\PlayerEnums.vb" />
     <Compile Include="src\business\enums\SettingsEnums.vb" />
     <Compile Include="src\forms\AutoStarts.vb" />
+    <Compile Include="src\service\ExceptionService.vb" />
     <Compile Include="src\service\settings\IImmutableSetting.vb" />
+    <Compile Include="src\service\settings\IniService.vb" />
     <Compile Include="src\service\settings\ISetting.vb" />
     <Compile Include="src\service\settings\IniSetting.vb" />
     <Compile Include="src\service\settings\RegistrySetting.vb" />

@@ -76,7 +76,7 @@ Public Class OptionsForm
         Me.Size = New Size(325 + listMenu.Width, 300)
         Me.Location = New Point(Form1.Left + Form1.Width / 2 - Me.Width / 2, Form1.Top + Form1.Height / 2 - Me.Height / 2)
         labelMenu.Text = ""
-        FormUtils.colorForm(Me)
+        If SettingsService.settingsInitialized Then FormUtils.colorForm(Me)
         Form1.cancelSearch()
         If state = optionState.NONE Then
             If Form1.lastOptionsState = optionState.NONE Then
@@ -221,13 +221,13 @@ Public Class OptionsForm
 
             Case optionState.PATHS
                 labelMenu.Text = "First two paths must be valid to use the player, other invalid paths may lead to malfunctions."
-                tStatsFile.Text = inipath
-                tMusicDir.Text = path
-                tPlaylistFile.Text = playlistPath
-                tDatesFile.Text = logpath
-                tLyricsDir.Text = lyrpath
-                tFtpDir.Text = ftpPath
-                If darkTheme Then
+                tStatsFile.Text = IIf(inipath IsNot Nothing, inipath, "")
+                tMusicDir.Text = IIf(path IsNot Nothing, path, "")
+                tPlaylistFile.Text = IIf(playlistPath IsNot Nothing, playlistPath, "")
+                tDatesFile.Text = IIf(logpath IsNot Nothing, logpath, "")
+                tLyricsDir.Text = IIf(lyrpath IsNot Nothing, lyrpath, "")
+                tFtpDir.Text = IIf(ftpPath IsNot Nothing, ftpPath, "")
+                If SettingsService.settingsInitialized AndAlso darkTheme Then
                     logPathKeyPic.BackgroundImage = My.Resources.unlock_inv
                     logPathReloadPic.BackgroundImage = My.Resources.rel_inv
                 Else
@@ -273,11 +273,9 @@ Public Class OptionsForm
     End Sub
 
     Function saveChanges() As Boolean 'true if form must not be closed
-        dll.inipath = inipath
         Select Case state
             Case optionState.KEYSET
                 If waitingInput Then switchKeyInputState()
-                ' Form1.delayMs = numDelay.Value
                 saveSetting(SettingsIdentifier.DELAY_MS, numDelay.Value)
                 Form1.keydelayt.Interval = numDelay.Value
 
@@ -306,7 +304,7 @@ Public Class OptionsForm
             Case optionState.RADIO
                 If sortingBox.SelectedIndex = 0 Then
                     For i = 0 To listStations.Items.Count - 1
-                        dll.iniDeleteKey(IniSection.RADIO, listStations.Items(i).name, inipath)
+                        IniService.iniDeleteKey(IniSection.RADIO, listStations.Items(i).name)
                     Next
                 End If
                 For i = 0 To listStations.Items.Count - 1
@@ -332,7 +330,7 @@ Public Class OptionsForm
                     SettingsService.setSetting(SettingsIdentifier.INIPATH, tStatsFile.Text)
                     If Not inipath = tStatsFile.Text Then
                         'Form1.inipath = tStatsFile.Text
-                        If dll.iniIsValidSection(IniSection.TRACKS, inipath) Then
+                        If IniService.iniIsValidSection(IniSection.TRACKS) Then
                             If MsgBox("You chose a new settings file. Override other paths from that file?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
                                 setPath(0, SettingsService.loadSetting(SettingsIdentifier.PATH))
                                 setPath(1, SettingsService.loadSetting(SettingsIdentifier.LOGPATH))
@@ -375,7 +373,7 @@ Public Class OptionsForm
             Return
         End If
         Form1.lastOptionsState = state
-        Form1.lockFormSwitch()
+        If SettingsService.settingsInitialized Then Form1.lockFormSwitch()
     End Sub
 
 
@@ -497,7 +495,7 @@ Public Class OptionsForm
     Private Sub defaultclick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles defaultButton.Click
         If MsgBox("Are you sure to delete all custom key bindings?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
             For Each k As Key In Key.keyList
-                dll.iniDeleteKey(IniSection.HOTKEYS, k.ToString, inipath)
+                IniService.iniDeleteKey(IniSection.HOTKEYS, k.ToString)
             Next
             Key.initKeys()
             reloadKeySet()
@@ -582,14 +580,14 @@ Public Class OptionsForm
         End If
     End Sub
 
-    Sub setCurrentSet(ByVal currKey As Key)
+    Sub setCurrentSet(currKey As Key)
         currKey.keyCombiSet.Clear()
         For i = 0 To listSet.Items.Count - 1
             currKey.keyCombiSet.Add(listSet.Items(i))
         Next
     End Sub
 
-    Sub saveCurrentSet(ByVal currKey As Key)
+    Sub saveCurrentSet(currKey As Key)
         If listSet.Items.Count > 0 Then
             Dim combiString As String = ""
             For i = 0 To listSet.Items.Count - 1
@@ -597,7 +595,7 @@ Public Class OptionsForm
             Next
             saveRawSetting(SettingsIdentifier.HOTKEY_MAPPING, currKey.ToString(), combiString)
         Else
-            dll.iniDeleteKey(IniSection.HOTKEYS, currKey.ToString, inipath)
+            IniService.iniDeleteKey(IniSection.HOTKEYS, currKey.ToString)
         End If
     End Sub
 
@@ -688,12 +686,12 @@ Public Class OptionsForm
             If listAssociations.SelectedIndex > -1 Then
                 If TypeOf listAssociations.SelectedItem Is Track Then
                     Dim tr As Track = listAssociations.SelectedItem
-                    dll.iniDeleteKey(IniSection.GENRES, tr.name, inipath)
+                    IniService.iniDeleteKey(IniSection.GENRES, tr.name)
                     listGenres.SelectedItem.tracks.remove(tr)
                     listAssociations.Items.RemoveAt(listAssociations.SelectedIndex)
                 ElseIf TypeOf listAssociations.SelectedItem Is Folder Then
                     Dim fol As Folder = listAssociations.SelectedItem
-                    dll.iniDeleteKey(IniSection.GENRES, fol.fullPath, inipath)
+                    IniService.iniDeleteKey(IniSection.GENRES, fol.fullPath)
                     listGenres.SelectedItem.folders.remove(fol)
                     fol.genre = Genre.Undefined
                     listAssociations.Items.RemoveAt(listAssociations.SelectedIndex)
@@ -707,11 +705,11 @@ Public Class OptionsForm
             For Each it As Object In listAssociations.Items
                 If TypeOf it Is Track Then
                     Dim tr As Track = it
-                    dll.iniDeleteKey(IniSection.GENRES, tr.name, inipath)
+                    IniService.iniDeleteKey(IniSection.GENRES, tr.name)
                     listGenres.SelectedItem.tracks.remove(tr)
                 ElseIf TypeOf it Is Folder Then
                     Dim fol As Folder = it
-                    dll.iniDeleteKey(IniSection.GENRES, fol.fullPath, inipath)
+                    IniService.iniDeleteKey(IniSection.GENRES, fol.fullPath)
                     listGenres.SelectedItem.folders.remove(fol)
                     fol.genre = Genre.Undefined
                 End If
@@ -735,7 +733,7 @@ Public Class OptionsForm
                     Return
                 Else
                     Dim currGenre As Genre = listGenres.SelectedItem
-                    If Not dll.iniIsValidKey(IniSection.GENRES, tr.name, inipath) OrElse
+                    If Not IniService.iniIsValidKey(IniSection.GENRES, tr.name) OrElse
                         MsgBox("Track association already exists for genre " & loadRawSetting(SettingsIdentifier.GENRES_MAPPING, tr.name) & ". Overwrite?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
                         saveRawSetting(SettingsIdentifier.GENRES_MAPPING, tr.name, currGenre.name)
                         refillAssociations(currGenre)
@@ -870,15 +868,15 @@ Public Class OptionsForm
             TopMost = False
             Dim a As String = InputBox("Type in new name", , listStations.SelectedItem.name)
             If Not a = "" And Not a = listStations.SelectedItem.name Then
-                dll.iniRenameKey(IniSection.RADIO, listStations.SelectedItem.name, a, inipath)
-                dll.iniRenameKey(IniSection.RADIO_TIME, listStations.SelectedItem.name, a, inipath)
+                IniService.iniRenameKey(IniSection.RADIO, listStations.SelectedItem.name, a)
+                IniService.iniRenameKey(IniSection.RADIO_TIME, listStations.SelectedItem.name, a)
             End If
             TopMost = True
         End If
     End Sub
     Private Sub remButton4_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles remButton4.Click
         If Not listStations.SelectedItem Is Nothing Then
-            dll.iniDeleteKey(IniSection.RADIO, listStations.SelectedItem.name)
+            IniService.iniDeleteKey(IniSection.RADIO, listStations.SelectedItem.name)
             Dim ind As Integer = listStations.SelectedIndex
             listStations.Items.Remove(listStations.SelectedItem)
             If listStations.Items.Count > 0 Then listStations.SelectedIndex = IIf(ind < listStations.Items.Count, ind, listStations.Items.Count - 1)

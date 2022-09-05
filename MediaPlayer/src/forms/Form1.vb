@@ -151,7 +151,7 @@ Public Class Form1
             End If
 
             If getSetting(SettingsIdentifier.PLAYLIST_SAVE_HISTORY) Then
-                Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs(IniSection.HISTORY, inipath)
+                Dim pairs As List(Of KeyValuePair(Of String, String)) = IniService.iniGetAllPairs(IniSection.HISTORY)
                 If pairs IsNot Nothing Then
                     For Each p As KeyValuePair(Of String, String) In pairs
                         Dim addTrack As Track = Nothing
@@ -169,7 +169,7 @@ Public Class Form1
                 If Not prioTrack = Nothing Then
                     prioTrack.selectPlaylist()
                 End If
-                dll.iniDeleteSection(IniSection.HISTORY, inipath)
+                IniService.iniDeleteSection(IniSection.HISTORY)
             End If
             If Not last = Nothing Then
                 Dim l As ListBox = getSelectedList()
@@ -883,17 +883,17 @@ Public Class Form1
 
     Public Sub showOptions(ByVal state As OptionsForm.optionState, Optional ByVal asDialog As Boolean = False, Optional title As String = "", Optional args() As String = Nothing)
         If Not optionsMode Then
-            If Not formLocked Then lockFormSwitch()
+            If SettingsService.settingsInitialized AndAlso Not formLocked Then lockFormSwitch()
             OptionsForm.Text = title
-            OptionsForm.state = state
-            OptionsForm.arguments = args
-            OptionsForm.TopMost = asDialog
-            If asDialog Then
-                OptionsForm.ShowDialog()
-            Else
-                OptionsForm.Show()
+                OptionsForm.state = state
+                OptionsForm.arguments = args
+                OptionsForm.TopMost = asDialog
+                If asDialog Then
+                    OptionsForm.ShowDialog()
+                Else
+                    OptionsForm.Show()
+                End If
             End If
-        End If
     End Sub
 
     Private Sub menuGadgets_Click(sender As Object, e As EventArgs) Handles menuGadgets.Click
@@ -2031,8 +2031,8 @@ Public Class Form1
                     For i = 0 To locs.Count - 1
                         Dim locPath As String = locs(i).fullPath 'root & locs(i).nodePath & "\"
                         If locs(i).isVirtual Then
-                            dll.iniDeleteKey(locs(i).fullPath, str.name, playlistPath)
-                            dll.iniWriteValue(locs(i).fullPath, newName, str.fullPath.Substring(0, str.fullPath.LastIndexOf("\") + 1) & newName & str.ext, playlistPath)
+                            IniService.iniDeleteKey(locs(i).fullPath, str.name, playlistPath)
+                            IniService.iniWriteValue(locs(i).fullPath, newName, str.fullPath.Substring(0, str.fullPath.LastIndexOf("\") + 1) & newName & str.ext, playlistPath)
                         Else
 1:                          If Not File.Exists(locPath & newName & str.ext) Then
                                 Try
@@ -2058,13 +2058,13 @@ Public Class Form1
                             End If
                         End If
                     Next
-                    If dll.iniIsValidKey(IniSection.TRACKS_TIME, str.name, inipath) Then
+                    If IniService.iniIsValidKey(IniSection.TRACKS_TIME, str.name) Then
                         saveRawSetting(SettingsIdentifier.TRACKS_TIME, newName, loadRawSetting(SettingsIdentifier.TRACKS_TIME, str.name))
-                        dll.iniDeleteKey(IniSection.TRACKS_TIME, str.name, inipath)
+                        IniService.iniDeleteKey(IniSection.TRACKS_TIME, str.name)
                     End If
-                    If dll.iniIsValidKey(IniSection.TRACKS, str.name, inipath) Then
+                    If IniService.iniIsValidKey(IniSection.TRACKS, str.name) Then
                         saveRawSetting(SettingsIdentifier.TRACKS_COUNT, newName, loadRawSetting(SettingsIdentifier.TRACKS_COUNT, str.name))
-                        dll.iniDeleteKey(IniSection.TRACKS, str.name, inipath)
+                        IniService.iniDeleteKey(IniSection.TRACKS, str.name)
                     End If
 
 
@@ -2185,7 +2185,7 @@ Public Class Form1
                     Dim exists As Integer = Folder.directoryOrVirtualExists(selNode.fullPath, a)
                     If exists = 0 Then
                         Dim tr As Track = getSelectedList().SelectedItem
-                        dll.iniWriteValue(selNode.fullPath & a & "\", tr.name, tr.fullPath, playlistPath)
+                        IniService.iniWriteValue(selNode.fullPath & a & "\", tr.name, tr.fullPath, playlistPath)
                         tv_refill(selNode.fullPath & a)
                     Else
                         MsgBox(IIf(exists = 1, "Folder ", "Playlist ") & "with that name already exists." & vbNewLine & "Please choose another name.", MsgBoxStyle.Information)
@@ -2648,9 +2648,9 @@ Public Class Form1
         If Me.WindowState = FormWindowState.Minimized Then
             'If Not showMinimizedInTaskbar Then
             iconTray.Visible = True
-                Me.Hide()
-                ' End If
-            Else
+            Me.Hide()
+            ' End If
+        Else
             iconTray.Visible = False
             '   If firstLoad Then resizeUpdate()
         End If
@@ -3093,7 +3093,7 @@ Public Class Form1
 
 #Region "Meta Stats"
     Function isEncoded() As Boolean
-        If Not dll.iniIsValidSection("Musik", logpath) Then
+        If Not IniService.iniIsValidSection("Musik", logpath) Then
             Return True
         End If
         Return False
@@ -3750,16 +3750,16 @@ Public Class Form1
 
 
 
-    Function getAudioFiles(ByVal path As String) As String()
-        Dim restr() As String = Nothing
+    Function getAudioFiles(path As String) As List(Of String)
+        Dim res As New List(Of String)
         If IO.Directory.Exists(path) Then
             For Each fil As String In My.Computer.FileSystem.GetFiles(path)
                 If dll.hasAudioExt(fil) Then
-                    dll.ExtendArray(restr, fil)
+                    res.Add(fil)
                 End If
             Next
         End If
-        Return restr
+        Return res
     End Function
 
     Sub setSoundDevice(ByVal dev As String)
@@ -4141,6 +4141,10 @@ Public Class Form1
         Me.Show()
         ShowInTaskbar = True
         Me.WindowState = FormWindowState.Normal
+    End Sub
+
+    Private Sub Button1_Click_1(sender As Object, e As EventArgs) Handles Button1.Click
+        IniService.iniGetAllValues("kk")
     End Sub
 
 

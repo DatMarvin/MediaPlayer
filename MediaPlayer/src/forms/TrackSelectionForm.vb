@@ -179,7 +179,7 @@ Public Class TrackSelectionForm
                 For Each s As String In sourceFiles
                     newTrack = New Track(Form1, s, True, currFolder.fullPath & s.Substring(s.LastIndexOf("\") + 1))
                     If Not currFolder.containsTrack(newTrack) Then
-                        dll.iniWriteValue(currFolder.fullPath, newTrack.name, newTrack.fullPath, playlistPath)
+                        IniService.iniWriteValue(currFolder.fullPath, newTrack.name, newTrack.fullPath, playlistPath)
                         currFolder.tracks.Add(newTrack)
                     End If
                 Next
@@ -229,7 +229,7 @@ Public Class TrackSelectionForm
                             End Try
                         Else
                             currFolder.tracks.Remove(curr)
-                            dll.iniDeleteKey(curr.path, curr.name, playlistPath)
+                            IniService.iniDeleteKey(curr.path, curr.name, playlistPath)
                             listTrackSelection.Items.Remove(checked(i))
                         End If
                         changeOccured = True
@@ -254,7 +254,7 @@ Public Class TrackSelectionForm
                 Dim currTrack As Track = checkedTracks(0)
                 Dim newSource As String = Form1.getExactFileDialog(currTrack.name, currTrack.ext, currTrack.path)
                 If IO.File.Exists(newSource) And dll.hasAudioExt(newSource) Then
-                    dll.iniWriteValue(currTrack.path, currTrack.name, newSource, playlistPath)
+                    IniService.iniWriteValue(currTrack.path, currTrack.name, newSource, playlistPath)
                     currTrack.fullPath = newSource
                     currFolder = currFolder
                     checked(0).SubItems(2).Text = newSource
@@ -269,7 +269,7 @@ Public Class TrackSelectionForm
                     For i = 0 To checkedTracks.Count - 1
                         Dim curr As Track = checkedTracks(i)
                         Dim newSourcePath As String = newSource & curr.name & curr.ext
-                        dll.iniWriteValue(curr.path, curr.name, newSourcePath, playlistPath)
+                        IniService.iniWriteValue(curr.path, curr.name, newSourcePath, playlistPath)
                         curr.fullPath = newSourcePath
                         checked(i).SubItems(2).Text = newSourcePath
                         If IO.File.Exists(newSourcePath) Then

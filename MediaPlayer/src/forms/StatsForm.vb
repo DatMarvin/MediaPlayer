@@ -192,10 +192,10 @@ Public Class StatsForm
     End Function
 
     Sub loadRadioStats()
-        Dim names() As String = dll.iniGetAllKeys(IniSection.RADIO_TIME, inipath)
-        Dim vals() As String = dll.iniGetAllValues(IniSection.RADIO_TIME, inipath)
-        If names IsNot Nothing And vals IsNot Nothing Then
-            For i = 0 To names.Length - 1
+        Dim names As List(Of String) = IniService.iniGetAllKeys(IniSection.RADIO_TIME)
+        Dim vals As List(Of String) = IniService.iniGetAllValues(IniSection.RADIO_TIME)
+        If names.Count = vals.Count Then
+            For i = 0 To names.Count - 1
                 listRadioStats.Items.Add(names(i))
                 listRadioStats.Items.Item(i).SubItems.Add(dll.SecondsTodhmsString(vals(i)))
             Next
@@ -381,13 +381,11 @@ Public Class StatsForm
     Public Sub totaltime()
         Dim radTime As Integer = 0
         Dim radnumber As Integer = 0
-        Dim vals() As String = dll.iniGetAllValues(IniSection.RADIO_TIME, inipath)
-        If vals IsNot Nothing Then
-            For i = 0 To vals.Length - 1
-                radTime += vals(i)
-                radnumber += 1
-            Next
-        End If
+        Dim vals As List(Of String) = IniService.iniGetAllValues(IniSection.RADIO_TIME)
+        For i = 0 To vals.Count - 1
+            radTime += vals(i)
+            radnumber += 1
+        Next
         If radnumber = 0 Then radnumber = 1
 
         Dim alltim As Integer = 0
@@ -398,20 +396,18 @@ Public Class StatsForm
 
         Dim diff As Integer = Now.Subtract(IIf(dateLogStart.ToShortDateString() = "06.04.2011", CDate("11.09.2012"), dateLogStart)).TotalDays
 
-        Dim strTracks() As String = dll.iniGetAllLines(IniSection.TRACKS, inipath)
-        If Not IsNothing(strTracks) Then
-            For i = 0 To strTracks.Length - 1
-                Dim name As String = Mid(strTracks(i), 1, strTracks(i).LastIndexOf("="))
-                Dim count As Integer = Mid(strTracks(i), strTracks(i).LastIndexOf("=") + 2)
-                If count > 0 Then
-                    allnumber += 1
-                    allCount += count
-                    Dim currLen As Double = loadRawSetting(SettingsIdentifier.TRACKS_TIME, name)
-                    alltim += count * currLen
-                    allLen += currLen
-                End If
-            Next
-        End If
+        Dim strTracks As List(Of String) = IniService.iniGetAllLines(IniSection.TRACKS)
+        For i = 0 To strTracks.Count - 1
+            Dim name As String = Mid(strTracks(i), 1, strTracks(i).LastIndexOf("="))
+            Dim count As Integer = Mid(strTracks(i), strTracks(i).LastIndexOf("=") + 2)
+            If count > 0 Then
+                allnumber += 1
+                allCount += count
+                Dim currLen As Double = loadRawSetting(SettingsIdentifier.TRACKS_TIME, name)
+                alltim += count * currLen
+                allLen += currLen
+            End If
+        Next
         If allnumber = 0 Then allnumber = 1
 
 

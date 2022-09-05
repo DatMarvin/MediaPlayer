@@ -197,6 +197,7 @@ Public Module SettingsService
     Public Sub initSystemSettings()
 
         settings.Add(SettingsIdentifier.INIPATH, New RegistrySetting(CONFIG_SECTION, "iniPath", Utils.concatPaths(defaultDir(), Utils.appName), AddressOf FollowupAction.checkFilePath))
+        IniService.init(getSetting(SettingsIdentifier.INIPATH))
         settings.Add(SettingsIdentifier.PATH, New IniSetting(Of String)(CONFIG_SECTION, "path", "", AddressOf FollowupAction.checkPath))
         settings.Add(SettingsIdentifier.PLAYLISTPATH, New IniSetting(Of String)(CONFIG_SECTION, "playlistpath", ""))
         settings.Add(SettingsIdentifier.LOGPATH, New IniSetting(Of String)(CONFIG_SECTION, "logpath", ""))
@@ -328,6 +329,10 @@ Public Module SettingsService
 
     Public Function getSetting(identifier As SettingsIdentifier) As Object
         Dim setting As ISetting = lookupSetting(identifier)
+        If setting Is Nothing Then
+            'TODO logging 
+            Return Nothing
+        End If
         Dim rawString As String = setting.getSetting()
         Return mapStringToObject(setting, rawString)
     End Function

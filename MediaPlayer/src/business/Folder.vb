@@ -50,15 +50,15 @@ Public Class Folder
     Public Sub invalidateFolderTracks(Optional ByVal subFolders As Boolean = True, Optional ByVal light As Boolean = False)
         If dialogMode Then Return
         tracks = New List(Of Track)
-        Dim files() As String = Nothing
+        Dim files As List(Of String)
         If isVirtual Then
-            files = dll.iniGetAllValues(fullPath, playlistPath)
+            files = IniService.iniGetAllValues(fullPath, playlistPath)
         Else
             files = Form1.getAudioFiles(fullPath)
         End If
         If files IsNot Nothing Then
             Dim loadFails As New List(Of Track)
-            For k = 0 To files.Length - 1
+            For k = 0 To files.Count - 1
                 If IO.File.Exists(files(k)) Then
                     Dim virtPath As String = ""
                     If isVirtual Then virtPath = fullPath & files(k).Substring(files(k).LastIndexOf("\") + 1)
@@ -135,7 +135,7 @@ Public Class Folder
             Dim exists As Integer = directoryOrVirtualExists(nodePath, a)
             If exists = 0 Then
                 Dim newListPath As String = fullPath & a & "\"
-                dll.iniAppendRaw(vbNewLine & "[" & newListPath & "]", playlistPath)
+                IniService.iniAppendRaw(vbNewLine & "[" & newListPath & "]", playlistPath)
                 Dim newFolder As New Folder(newListPath)
                 children.Add(newFolder)
                 Return newFolder
@@ -191,7 +191,7 @@ Public Class Folder
                     Dim folders As List(Of Folder) = Folder.getVirtualFolders()
                     For Each f As Folder In folders
                         If f.fullPath.StartsWith(fullPath) Then
-                            dll.iniDeleteSection(f.fullPath, playlistPath)
+                            IniService.iniDeleteSection(f.fullPath, playlistPath)
                             Folder.invalidateFolders(Folder.top)
                         End If
                     Next
@@ -206,7 +206,7 @@ Public Class Folder
                     Dim folders As List(Of Folder) = Folder.getVirtualFolders()
                     For Each f As Folder In folders
                         If f.fullPath.StartsWith(fullPath) Then
-                            dll.iniDeleteSection(f.fullPath, playlistPath)
+                            IniService.iniDeleteSection(f.fullPath, playlistPath)
                         End If
                     Next
                     Try
@@ -262,7 +262,7 @@ Public Class Folder
             Form1.Cursor = Cursors.Default
         End Try
 
-        dll.iniDeleteSection(fullPath, playlistPath)
+        IniService.iniDeleteSection(fullPath, playlistPath)
 
         Folder.invalidateFolders(Folder.top)
         Form1.tv_refill()
@@ -276,7 +276,7 @@ Public Class Folder
             MsgBox("Folder cannot be converted to playlist." & vbNewLine & "Reason: Folder contains subfolders", MsgBoxStyle.Exclamation)
             Return False
         End If
-        If dll.iniIsValidSection(fullPath, playlistPath) Then
+        If IniService.iniIsValidSection(fullPath, playlistPath) Then
             MsgBox("Playlist already exists (currently shadowed by folder)", MsgBoxStyle.Exclamation)
             Return False
         End If
@@ -432,16 +432,14 @@ Public Class Folder
         Dim res As New List(Of Folder) From {folder}
 
         If includeVirtual Then
-            Dim lists() As String = dll.iniGetAllSections(playlistPath)
-            If lists IsNot Nothing Then
-                For i = 0 To lists.Length - 1
-                    If New Folder(lists(i)).path.ToLower = folder.fullPath.ToLower Then
-                        If Not IO.Directory.Exists(lists(i)) Then 'prefer real folder over virtual
-                            getAllFoldersHelper(folder, lists(i))
-                        End If
+            Dim lists As List(Of String) = IniService.iniGetAllSections(playlistPath)
+            For i = 0 To lists.Count - 1
+                If New Folder(lists(i)).path.ToLower = folder.fullPath.ToLower Then
+                    If Not IO.Directory.Exists(lists(i)) Then 'prefer real folder over virtual
+                        getAllFoldersHelper(folder, lists(i))
                     End If
-                Next
-            End If
+                End If
+            Next
         End If
 
         If Not folder.isVirtual Then

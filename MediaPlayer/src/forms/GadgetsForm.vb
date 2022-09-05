@@ -162,19 +162,17 @@ Public Class GadgetsForm
     Sub fillClickCounterHistory()
 
         clickCounterHistoryList.Items.Clear()
-        Dim allSecs() As String = dll.iniGetAllSections(inipath)
+        Dim allSecs As List(Of String) = IniService.iniGetAllSections()
         Dim clickSecs As New List(Of String)
-        If allSecs IsNot Nothing Then
-            For Each sec In allSecs
-                If sec.ToLower.StartsWith(SettingsEnums.IniSection.CLICKS.ToLower()) Then
-                    If sec.ToLower = SettingsEnums.IniSection.CLICKS.ToLower() Then
-                        clickSecs.Add(Now.ToShortDateString())
-                    Else
-                        clickSecs.Add(sec.Substring(6))
-                    End If
+        For Each sec In allSecs
+            If sec.ToLower.StartsWith(SettingsEnums.IniSection.CLICKS.ToLower()) Then
+                If sec.ToLower = SettingsEnums.IniSection.CLICKS.ToLower() Then
+                    clickSecs.Add(Now.ToShortDateString())
+                Else
+                    clickSecs.Add(sec.Substring(6))
                 End If
-            Next
-        End If
+            End If
+        Next
         Dim secArray() = clickSecs.ToArray()
         Array.Sort(secArray, New ClickHistoryComparer())
         clickCounterHistoryList.Items.AddRange(secArray)
@@ -207,7 +205,7 @@ Public Class GadgetsForm
         If Not CDate(timestamp).CompareTo(CDate(Now.ToShortDateString())) = 0 Then
             secName &= timestamp
         End If
-        Return dll.iniReadValue(secName, key, 0, inipath)
+        Return IniService.iniReadValue(secName, key, 0)
     End Function
 
     Function getClickCounterValueTotal(key As String) As Integer
@@ -262,10 +260,10 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub resetButton_Click(sender As Object, e As EventArgs) Handles resetButton.Click
-        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_LEFT, labelLeftCLick.Text.Substring(labelLeftCLick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
-        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_RIGHT, labelRightClick.Text.Substring(labelRightClick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
-        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_MIDDLE, labelMiddleClick.Text.Substring(labelMiddleClick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
-        dll.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_TOTAL, labelTotalClick.Text.Substring(labelTotalClick.Text.IndexOf(":") + 2).Replace(".", ""), inipath)
+        IniService.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_LEFT, labelLeftCLick.Text.Substring(labelLeftCLick.Text.IndexOf(":") + 2).Replace(".", ""))
+        IniService.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_RIGHT, labelRightClick.Text.Substring(labelRightClick.Text.IndexOf(":") + 2).Replace(".", ""))
+        IniService.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_MIDDLE, labelMiddleClick.Text.Substring(labelMiddleClick.Text.IndexOf(":") + 2).Replace(".", ""))
+        IniService.iniWriteValue(IniSection.CLICKS & Now.ToShortDateString, CLICKS_BUTTON_TOTAL, labelTotalClick.Text.Substring(labelTotalClick.Text.IndexOf(":") + 2).Replace(".", ""))
         labelLeftCLick.Text = "Left: 0"
         labelRightClick.Text = "Right: 0"
         labelMiddleClick.Text = "Middle: 0"
@@ -288,12 +286,10 @@ Public Class GadgetsForm
 
     Sub fillAutostartList()
         autostartList.Items.Clear()
-        Dim allKeys() As String = dll.iniGetAllKeys(IniSection.AUTOSTARTS, inipath)
-        If allKeys IsNot Nothing Then
-            For Each key In allKeys
-                autostartList.Items.Add(key)
-            Next
-        End If
+        Dim allKeys As List(Of String) = IniService.iniGetAllKeys(IniSection.AUTOSTARTS)
+        For Each key In allKeys
+            autostartList.Items.Add(key)
+        Next
     End Sub
     Private Sub autostartList_SelectedIndexChanged(sender As Object, e As EventArgs) Handles autostartList.SelectedIndexChanged
         If autostartList.SelectedIndex > -1 Then
@@ -306,14 +302,14 @@ Public Class GadgetsForm
     End Sub
 
     Function getAutostartPath(name As String) As String
-        Dim raw = dll.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
+        Dim raw = IniService.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length > 1 Then
             Return raw(1)
         End If
         Return ""
     End Function
     Function getAutostartArgs(name As String) As String
-        Dim raw = dll.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
+        Dim raw = IniService.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length > 2 Then
             Return raw(2)
         End If
@@ -321,7 +317,7 @@ Public Class GadgetsForm
     End Function
 
     Function getAutostartActive(name As String) As Boolean
-        Dim raw = dll.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
+        Dim raw = IniService.iniReadValue(IniSection.AUTOSTARTS, name, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length > 0 Then
             Return CBool(raw(0))
         End If
@@ -349,17 +345,12 @@ Public Class GadgetsForm
     Sub autostartSave()
         Dim name As String = textboxAutostartName.Text
         Dim s As String = Math.Abs(CInt(checkAutostartActive.Checked)) & ";" & textboxAutostartPath.Text & ";" & textboxAutostartArgs.Text
-        dll.iniWriteValue(IniSection.AUTOSTARTS, name, s, inipath)
+        IniService.iniWriteValue(IniSection.AUTOSTARTS, name, s)
     End Sub
 
     Function autoStartExists(name As String) As Boolean
-        Dim keys() As String = dll.iniGetAllKeys(IniSection.AUTOSTARTS, inipath)
-        If keys IsNot Nothing Then
-            For Each value As String In keys
-                If value.ToLower = name.ToLower Then Return True
-            Next
-        End If
-        Return False
+        Dim keys As List(Of String) = IniService.iniGetAllKeys(IniSection.AUTOSTARTS)
+        Return keys.Any(Function(value) value.ToLower() = name.ToLower())
     End Function
 
 
@@ -369,7 +360,7 @@ Public Class GadgetsForm
             MsgBox("Name not allowed", MsgBoxStyle.Exclamation)
         Else
             textboxAutostartName.Text = newName
-            dll.iniWriteValue(IniSection.AUTOSTARTS, newName, "1", inipath)
+            IniService.iniWriteValue(IniSection.AUTOSTARTS, newName, "1")
             autostartList.Items.Add(newName)
             autostartList.SelectedItem = newName
             checkAutostartActive.Checked = True
@@ -381,7 +372,7 @@ Public Class GadgetsForm
             textboxAutostartName.Text = ""
             textboxAutostartPath.Text = ""
             textboxAutostartArgs.Text = ""
-            dll.iniDeleteKey(IniSection.AUTOSTARTS, autostartList.SelectedItem, inipath)
+            IniService.iniDeleteKey(IniSection.AUTOSTARTS, autostartList.SelectedItem)
             fillAutostartList()
         End If
     End Sub
@@ -546,7 +537,7 @@ Public Class GadgetsForm
 
     Function getMacroFromIni(index As Integer) As Macro
         Dim res As New Macro(index, "Macro " & index + 1)
-        Dim raw = dll.iniReadValue(IniSection.MACROS, index, "", inipath, 2048).Split(";")
+        Dim raw = IniService.iniReadValue(IniSection.MACROS, index, "", inipath, 2048).Split(";")
         If raw IsNot Nothing AndAlso raw.Length = 5 Then
             res.name = raw(0)
             res.active = raw(1)
@@ -583,7 +574,7 @@ Public Class GadgetsForm
             name = "Macro " & index + 1
         End If
         Dim s As String = name & ";" & Math.Abs(CInt(macroActiveCheckbox.Checked)) & ";" & textMacroPath.Text & ";" & textMacroArgs.Text & ";" & Math.Abs(CInt(checkMacroOverride.Checked))
-        dll.iniWriteValue(IniSection.MACROS, index, s, inipath)
+        IniService.iniWriteValue(IniSection.MACROS, index, s)
     End Sub
 
 

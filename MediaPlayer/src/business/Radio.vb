@@ -21,10 +21,10 @@ Public Class Radio
 
     Public Shared Function getStations() As List(Of Radio)
         Dim rads As New List(Of Radio)
-        Dim names() As String = dll.iniGetAllKeys(IniSection.RADIO, inipath)
-        Dim urls() As String = dll.iniGetAllValues(IniSection.RADIO, inipath)
-        If names IsNot Nothing And urls IsNot Nothing Then
-            For i = 0 To names.Length - 1
+        Dim names As List(Of String) = IniService.iniGetAllKeys(IniSection.RADIO)
+        Dim urls As List(Of String) = IniService.iniGetAllValues(IniSection.RADIO)
+        If names.Count = urls.Count Then
+            For i = 0 To names.Count - 1
                 rads.Add(New Radio(names(i), urls(i)))
                 rads(rads.Count - 1).update()
             Next

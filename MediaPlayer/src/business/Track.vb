@@ -146,8 +146,8 @@ Public Class Track
         If partsCount > 0 Then
             parts = New List(Of TrackPart)
             For i = 0 To partsCount - 1
-                Dim timeData As String = dll.iniReadValue(i + 1, "time", "0,0", p)
-                Dim nameData As String = dll.iniReadValue(i + 1, "name", "", p)
+                Dim timeData As String = IniService.iniReadValue(i + 1, "time", "0,0", p)
+                Dim nameData As String = IniService.iniReadValue(i + 1, "name", "", p)
                 parts.Add(New TrackPart(formhandle, Me, i, {timeData, nameData}))
             Next
         End If
@@ -208,7 +208,7 @@ Public Class Track
                 Dim dt As Date = Nothing
                 If Date.TryParse(a, dt) Then
                     Dim wInd As Integer = getLogDateIndex()
-                    dll.iniWriteValue(SettingsEnums.IniSection.LOG_DATE, wInd, dt.ToShortDateString & "  -  " & name, logpath)
+                    IniService.iniWriteValue(IniSection.LOG_DATE, wInd, dt.ToShortDateString & "  -  " & name, logpath)
                     formhandle.labelStatsUpdate()
                 Else
                     MsgBox("Invalid date Format. DD.MM.YYYY")
@@ -217,12 +217,12 @@ Public Class Track
                 If Not added = Nothing Then
                     If MsgBox("Delete saved date?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
                         Dim wInd As Integer = getLogDateIndex()
-                        Dim vals() As String = dll.iniGetAllValues(SettingsEnums.IniSection.LOG_DATE, logpath)
-                        If vals IsNot Nothing Then
-                            For i = wInd To vals.Length - 1
-                                dll.iniWriteValue(SettingsEnums.IniSection.LOG_DATE, i, vals(i), logpath)
+                        Dim vals As List(Of String) = IniService.iniGetAllValues(IniSection.LOG_DATE, logpath)
+                        If vals.Count > 0 Then
+                            For i = wInd To vals.Count - 1
+                                IniService.iniWriteValue(IniSection.LOG_DATE, i, vals(i), logpath)
                             Next
-                            dll.iniDeleteKey(SettingsEnums.IniSection.LOG_DATE, vals.Length, logpath)
+                            IniService.iniDeleteKey(IniSection.LOG_DATE, vals.Count, logpath)
                             formhandle.labelStatsUpdate()
                         End If
                     End If
@@ -252,7 +252,7 @@ Public Class Track
             '    Return 0
         Else
             Dim n As Integer = 0
-            Do Until Not dll.iniIsValidKey(n + 1, "time", ini)
+            Do Until Not IniService.iniIsValidKey(n + 1, "time", ini)
                 n += 1
             Loop
             Return n
@@ -392,8 +392,8 @@ Public Class Track
 
     Sub copyToVirtualFolder(fol As Folder)
         If Not fol = Nothing Then
-            If Not dll.iniIsValidKey(fol.fullPath, name, playlistPath) OrElse MsgBox("Track already in playlist. Overwrite?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
-                dll.iniWriteValue(fol.fullPath, name, fullPath, playlistPath)
+            If Not IniService.iniIsValidKey(fol.fullPath, name, playlistPath) OrElse MsgBox("Track already in playlist. Overwrite?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
+                IniService.iniWriteValue(fol.fullPath, name, fullPath, playlistPath)
                 fol.tracks.Add(New Track(formhandle, fullPath, False, fol.fullPath & name & ext))
             End If
         End If
@@ -401,11 +401,11 @@ Public Class Track
     Sub moveToVirtualFolder(fol As Folder)
         Dim source As Folder = Folder.getFolder(path)
         If Not fol = Nothing AndAlso source IsNot Nothing Then
-            If Not dll.iniIsValidKey(fol.fullPath, name, playlistPath) OrElse MsgBox("Track already in playlist. Overwrite?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
-                dll.iniWriteValue(fol.fullPath, name, fullPath, playlistPath)
+            If Not IniService.iniIsValidKey(fol.fullPath, name, playlistPath) OrElse MsgBox("Track already in playlist. Overwrite?", MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
+                IniService.iniWriteValue(fol.fullPath, name, fullPath, playlistPath)
                 fol.tracks.Add(New Track(formhandle, fullPath, False, fol.fullPath & name & ext))
                 If source.isVirtual Then
-                    dll.iniDeleteKey(path, name, playlistPath)
+                    IniService.iniDeleteKey(path, name, playlistPath)
                 Else
                     Try
                         'IO.File.Delete(fullPath)
@@ -420,7 +420,7 @@ Public Class Track
     Public Sub virtualDelete()
         Dim fol As Folder = Folder.getFolder(path)
         If Not fol = Nothing Then
-            dll.iniDeleteKey(fol.fullPath, name, playlistPath)
+            IniService.iniDeleteKey(fol.fullPath, name, playlistPath)
             Form1.listRemove(formhandle.l2, Me)
             If fol = Folder.getSelectedFolder(Form1.tv) Then
                 fol.invalidateFolderTracks(False)
@@ -439,27 +439,26 @@ Public Class Track
         If IO.Directory.Exists(Folder.top.fullPath) And Folder.folders.Count > 0 Then
             For i = 0 To Folder.folders.Count - 1
                 Folder.folders(i).tracks = New List(Of Track)
-                Dim files() As String = Nothing
+                Dim files As New List(Of String)
                 If Folder.folders(i).isVirtual Then
                     If formhandle Is Nothing Then
                         formhandle = Form1
                     End If
-                    files = dll.iniGetAllValues(Folder.folders(i).fullPath, playlistPath)
+                    files = IniService.iniGetAllValues(Folder.folders(i).fullPath, playlistPath)
                 Else
                     If IO.Directory.Exists(Folder.folders(i).fullPath) Then
                         files = Form1.getAudioFiles(Folder.folders(i).fullPath)
                     End If
                 End If
-                If files IsNot Nothing Then
-                    For k = 0 To files.Length - 1
-                        Dim virtPath As String = ""
-                        If Folder.folders(i).isVirtual Then
-                            virtPath = Folder.folders(i).fullPath & files(k).Substring(files(k).LastIndexOf("\") + 1)
-                        End If
-                        Dim newTrack As Track = New Track(Form1, files(k), light, virtPath)
-                        Folder.folders(i).tracks.Add(newTrack)
-                    Next
-                End If
+                For k = 0 To files.Count - 1
+                    Dim virtPath As String = ""
+                    If Folder.folders(i).isVirtual Then
+                        virtPath = Folder.folders(i).fullPath & files(k).Substring(files(k).LastIndexOf("\") + 1)
+                    End If
+                    Dim newTrack As Track = New Track(Form1, files(k), light, virtPath)
+                    Folder.folders(i).tracks.Add(newTrack)
+                Next
+
             Next
         End If
         'tracks unique, assign several folders

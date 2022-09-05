@@ -82,7 +82,7 @@ Public Class Genre
         For Each g As Genre In genres
             g.tracks = New List(Of Track)
         Next
-        Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs(IniSection.GENRES, inipath)
+        Dim pairs As List(Of KeyValuePair(Of String, String)) = IniService.iniGetAllPairs(IniSection.GENRES)
         For Each p As KeyValuePair(Of String, String) In pairs
             If Not p.Key.Contains("\") Then
                 Dim currGenre As Genre = getGenre(p.Value)
@@ -96,7 +96,7 @@ Public Class Genre
         For Each g As Genre In genres
             g.folders = New List(Of Folder)
         Next
-        Dim pairs As List(Of KeyValuePair(Of String, String)) = dll.iniGetAllPairs(IniSection.GENRES, inipath)
+        Dim pairs As List(Of KeyValuePair(Of String, String)) = IniService.iniGetAllPairs(IniSection.GENRES)
         For Each p As KeyValuePair(Of String, String) In pairs
             If p.Key.Contains("\") Then
                 Dim currGenre As Genre = getGenre(p.Value)

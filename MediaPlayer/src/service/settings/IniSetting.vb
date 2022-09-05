@@ -1,16 +1,16 @@
 ﻿Public Class IniSetting(Of T)
     Implements ISetting
 
-    Dim iniPath As String
-    Dim bufferSize As Integer
+    ReadOnly iniPath As String
+    ReadOnly bufferSize As Integer
 
-    Dim defaultValue As String
+    ReadOnly defaultValue As String
     Dim value As String
 
-    Dim iniSection As String
-    Dim iniKey As String
+    ReadOnly iniSection As String
+    ReadOnly iniKey As String
 
-    Public Sub New(ByVal iniSection As String, ByVal iniKey As String, defaultValue As String, iniPath As String, bufferSize As Integer, dlg As ActionDelegate)
+    Public Sub New(iniSection As String, iniKey As String, defaultValue As String, iniPath As String, bufferSize As Integer, dlg As ActionDelegate)
         Me.iniSection = iniSection
         Me.iniKey = iniKey
         Me.defaultValue = defaultValue
@@ -25,26 +25,26 @@
     End Sub
 
 
-    Public Sub New(ByVal iniSection As String, ByVal iniKey As String, defaultValue As String, iniPath As String, dlg As ActionDelegate)
+    Public Sub New(iniSection As String, iniKey As String, defaultValue As String, iniPath As String, dlg As ActionDelegate)
         MyClass.New(iniSection, iniKey, defaultValue, iniPath, 1024, dlg)
     End Sub
 
-    Public Sub New(ByVal iniSection As String, ByVal iniKey As String, defaultValue As String, bufferSize As Integer, dlg As ActionDelegate)
+    Public Sub New(iniSection As String, iniKey As String, defaultValue As String, bufferSize As Integer, dlg As ActionDelegate)
         MyClass.New(iniSection, iniKey, defaultValue, SettingsService.loadSetting(SettingsIdentifier.INIPATH), bufferSize, dlg)
     End Sub
 
-    Public Sub New(ByVal iniSection As String, ByVal iniKey As String, defaultValue As String, iniPath As String)
+    Public Sub New(iniSection As String, iniKey As String, defaultValue As String, iniPath As String)
         MyClass.New(iniSection, iniKey, defaultValue, iniPath, 1024, Nothing)
     End Sub
 
-    Public Sub New(ByVal iniSection As String, ByVal iniKey As String, defaultValue As String, bufferSize As Integer)
+    Public Sub New(iniSection As String, iniKey As String, defaultValue As String, bufferSize As Integer)
         MyClass.New(iniSection, iniKey, defaultValue, SettingsService.loadSetting(SettingsIdentifier.INIPATH), bufferSize, Nothing)
     End Sub
 
-    Public Sub New(ByVal iniSection As String, ByVal iniKey As String, defaultValue As String, dlg As ActionDelegate)
+    Public Sub New(iniSection As String, iniKey As String, defaultValue As String, dlg As ActionDelegate)
         MyClass.New(iniSection, iniKey, defaultValue, SettingsService.loadSetting(SettingsIdentifier.INIPATH), 1024, dlg)
     End Sub
-    Public Sub New(ByVal iniSection As String, ByVal iniKey As String, defaultValue As String)
+    Public Sub New(iniSection As String, iniKey As String, defaultValue As String)
         MyClass.New(iniSection, iniKey, defaultValue, SettingsService.loadSetting(SettingsIdentifier.INIPATH), 1024, Nothing)
     End Sub
 
@@ -78,7 +78,7 @@
     End Sub
 
     Public Function exists() As Boolean Implements ISetting.exists
-        Return Form1.dll.iniIsValidKey(iniSection, iniKey, iniPath)
+        Return IniService.iniIsValidKey(iniSection, iniKey, iniPath)
     End Function
 
     Public Function isRawSetting() As Boolean
@@ -89,7 +89,7 @@
         Return loadFromPersistence(iniKey)
     End Function
     Private Function loadFromPersistence(iniKey As String) As String
-        Return Form1.dll.iniReadValue(iniSection, iniKey, defaultValue, iniPath, bufferSize)
+        Return IniService.iniReadValue(iniSection, iniKey, defaultValue, iniPath, bufferSize)
     End Function
 
     Private Function saveToPersistence(newValue As String) As Boolean
@@ -97,7 +97,7 @@
     End Function
     Private Function saveToPersistence(iniKey As String, newValue As String) As Boolean
         Dim old As String = value
-        Form1.dll.iniWriteValue(iniSection, iniKey, newValue, iniPath)
+        IniService.iniWriteValue(iniSection, iniKey, newValue, iniPath)
         setSetting(newValue)
         Return old <> value
     End Function
