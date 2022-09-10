@@ -129,8 +129,9 @@
     <Compile Include="ApplicationEvents.vb" />
     <Compile Include="src\business\enums\PlayerEnums.vb" />
     <Compile Include="src\business\enums\SettingsEnums.vb" />
-    <Compile Include="src\forms\AutoStarts.vb" />
+    <Compile Include="src\service\gadgets\AutoStarts.vb" />
     <Compile Include="src\service\ExceptionService.vb" />
+    <Compile Include="src\service\FileSystemWatcher.vb" />
     <Compile Include="src\service\settings\IImmutableSetting.vb" />
     <Compile Include="src\service\settings\IniService.vb" />
     <Compile Include="src\service\settings\ISetting.vb" />
@@ -141,6 +142,7 @@
     <Compile Include="src\service\settings\SettingsService.vb" />
     <Compile Include="src\service\gadgets\ClickGadget.vb" />
     <Compile Include="src\utils\AsyncTask.vb" />
+    <Compile Include="src\utils\ColorUtils.vb" />
     <Compile Include="src\utils\FormUtils.vb" />
     <Compile Include="src\utils\Utils.vb" />
     <Compile Include="src\business\Folder.vb" />

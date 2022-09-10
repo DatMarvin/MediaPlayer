@@ -49,7 +49,6 @@ Public Class Form1
 
     Public lastOptionsState As OptionsForm.optionState
 
-    Dim fswFlag As Boolean
 
     Dim currLyrTrack As Track
     Public overlayMode As eOverlayMode
@@ -114,24 +113,21 @@ Public Class Form1
 
         Key.initKeys()
 
-        picRepeat.BackColor = Color.FromName("Control")
-        picRandom.BackColor = Color.FromName("Control")
-        picRandom.BringToFront()
+        FileSystemWatcher.fswInit()
+
+
         currTrack = Nothing
-
-        fsw.Path = path
-        fsw.IncludeSubdirectories = True
-
         wmp.settings.balance = balance
         wmp.settings.rate = playRate
 
         formResize()
         FormUtils.colorForm(Me)
 
-        executeAutoStarts()
-        If keylogger Then
-            KeyloggerModule.keyloggerInit()
-        End If
+        AutoStarts.executeAutoStarts()
+
+
+        KeyloggerModule.keyloggerInit()
+
         GadgetsForm.initMacrosTable()
 
         updatePlayMode()
@@ -670,44 +666,17 @@ Public Class Form1
 
 
 #Region "File System Watcher"
+
     Private Sub fsw_Changed(sender As Object, e As FileSystemEventArgs) Handles fsw.Changed, fsw.Created, fsw.Deleted
-        If dll.hasAudioExt(e.FullPath) Then
-            fswHandle()
-        ElseIf Not e.FullPath.Contains(".") Then
-            fswHandle()
-        End If
+        FileSystemWatcher.handleCreatedChangedDeleted(e)
     End Sub
 
     Private Sub fsw_Renamed(sender As Object, e As RenamedEventArgs) Handles fsw.Renamed
-        If File.Exists(e.FullPath) Then
-            If dll.hasAudioExt(e.FullPath) Then
-                fswHandle()
-            End If
-        ElseIf Directory.Exists(e.FullPath) Then
-            Dim oldFolder As Folder = Folder.getFolder(e.OldFullPath)
-            If oldFolder IsNot Nothing Then
-                If Not oldFolder.isExcluded Then
-                    fswHandle()
-                End If
-            End If
-        End If
-    End Sub
-
-    Sub fswHandle()
-        If Not ActiveForm Is Me And Not ActiveForm Is OptionsForm Then
-            If Not fswSleep.Enabled Then
-                fswSleep.Start()
-                tv_refill()
-            Else
-                fswFlag = True
-            End If
-        End If
+        FileSystemWatcher.handleRenamed(e)
     End Sub
 
     Private Sub fswSleep_Tick(sender As Object, e As EventArgs) Handles fswSleep.Tick
-        If fswFlag Then tv_refill()
-        fswFlag = False
-        fswSleep.Stop()
+        FileSystemWatcher.handleFswSleepTimer()
     End Sub
 #End Region
 
@@ -1362,8 +1331,8 @@ Public Class Form1
                     End If
                 End If
             ElseIf TypeOf sender Is Button Then
-                sender.BackColor = FormUtils.getInvLightColor()
-                sender.foreColor = FormUtils.getDarkColor()
+                sender.BackColor = ColorUtils.getInvLightColor(Me)
+                sender.foreColor = ColorUtils.getDarkColor(Me)
             End If
 
             tt.Hide(Me)
@@ -1383,8 +1352,8 @@ Public Class Form1
         If Not sender.Equals(dragList) Then sender.selectedIndex = -1
     End Sub
     Private Sub button_DragLeave(ByVal sender As Object, ByVal e As System.EventArgs) Handles dragDropNextField.DragLeave, dragDropQueueField.DragLeave
-        sender.BackColor = FormUtils.getDarkColor()
-        sender.foreColor = FormUtils.getInvDarkColor()
+        sender.BackColor = ColorUtils.getDarkColor(Me)
+        sender.foreColor = ColorUtils.getInvDarkColor(Me)
     End Sub
 
     Private Sub dd_MouseUp(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles l2.MouseUp, l2_2.MouseUp

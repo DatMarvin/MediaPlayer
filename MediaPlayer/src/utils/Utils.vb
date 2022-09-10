@@ -114,8 +114,8 @@ Public Class Utils
         Return Mid(str, 7, 4) & "." & Mid(str, 4, 2) & "." & Mid(str, 1, 2)
     End Function
 
-    Function hasAudioExt(ByVal filStr As String) As Boolean
-        Dim str As String = Mid(filStr, filStr.LastIndexOf(".") + 2).ToLower
+    Shared Function hasAudioExt(filStr As String) As Boolean
+        Dim str As String = filStr.Substring(filStr.LastIndexOf(".") + 1).ToLower
         Dim audioExt() As String = {"mp3", "wav", "wma", "m4a", "flac", "aac"}
         Return audioExt.Contains(str)
     End Function

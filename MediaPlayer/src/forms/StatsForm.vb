@@ -250,7 +250,7 @@ Public Class StatsForm
         labelCountUpdate()
     End Sub
 
-    Private Sub radTracks_CheckedChanged(sender As Object, e As EventArgs) Handles radTracks.Click, radRadio.Click, radFolders.Click
+    Private Sub radTracks_Clicked(sender As Object, e As EventArgs) Handles radTracks.MouseClick, radRadio.MouseClick, radFolders.MouseClick
         If radTracks.Checked Then
             updateMode(Form1.eOverlayMode.STATS_TRACKS)
         ElseIf radRadio.Checked Then
@@ -410,7 +410,6 @@ Public Class StatsForm
         Next
         If allnumber = 0 Then allnumber = 1
 
-
         '  allLen = Await AsyncTask.executeTask(Me, AsyncTask.getTotaltime())
 
         MsgBox("Radio Time:" & vbNewLine & "‾‾‾‾‾‾‾‾‾‾‾‾" & vbNewLine & dll.SecondsTodhmsString(radTime) & vbNewLine & "Ø " & dll.SecondsTodhmsString(Int(radTime / radnumber)) & vbNewLine & "»  " & dll.SecondsTodhmsString(Int(radTime / diff)) & vbNewLine & vbNewLine &
@@ -422,5 +421,4 @@ Public Class StatsForm
                    "Alltime:" & vbNewLine & "‾‾‾‾‾‾‾‾" & vbNewLine &
                    "Total Time: " & vbNewLine & dll.SecondsTodhmsString((alltim + radTime)) & vbNewLine & "Ø " & dll.SecondsTodhmsString(Int((alltim + radTime) / (allnumber + radnumber))) & vbNewLine & "»  " & dll.SecondsTodhmsString(Int((alltim + radTime) / diff)))
     End Sub
-
 End Class

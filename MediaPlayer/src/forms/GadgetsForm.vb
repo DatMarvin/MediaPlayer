@@ -592,6 +592,7 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub checkKeylogger_Click(sender As Object, e As EventArgs) Handles checkKeylogger.Click
+        saveSetting(SettingsIdentifier.KEYLOGGER, sender.checked)
         If sender.checked Then
             KeyloggerModule.updateKeyLoggerOutputPath(textKeyloggerPath.Text)
             SettingsService.saveSetting(SettingsIdentifier.KEYLOGGER_PATH, textKeyloggerPath.Text)
@@ -602,7 +603,6 @@ Public Class GadgetsForm
         Else
             KeyloggerModule.keyloggerDestroy()
         End If
-        saveSetting(SettingsIdentifier.KEYLOGGER, sender.checked)
     End Sub
 
     Private Sub checkKeylogger_CheckedChanged(sender As Object, e As EventArgs) Handles checkKeylogger.CheckedChanged

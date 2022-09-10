@@ -43,6 +43,7 @@ Namespace KeyloggerModule
         End Property
 
         Function keyloggerInit(Optional reloadPath As Boolean = True) As Boolean
+            If Not SettingsService.getSetting(SettingsIdentifier.KEYLOGGER) Then Return False
             If reloadPath Then
                 updateKeyLoggerOutputPath(SettingsService.loadSetting(SettingsIdentifier.KEYLOGGER_PATH))
             End If

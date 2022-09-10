@@ -69,6 +69,7 @@ Partial Class StatsForm
         '
         Me.listFolderStats.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colFolder, Me.colTracks, Me.colCount, Me.colTime, Me.colPop, Me.colLength, Me.colAge})
         Me.listFolderStats.GridLines = True
+        Me.listFolderStats.HideSelection = False
         Me.listFolderStats.Location = New System.Drawing.Point(217, 182)
         Me.listFolderStats.MultiSelect = False
         Me.listFolderStats.Name = "listFolderStats"
@@ -116,6 +117,7 @@ Partial Class StatsForm
         '
         Me.listTrackStats.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colTrack, Me.colCount2, Me.colTime2, Me.colPerDay, Me.colLength2, Me.colDate, Me.colParts, Me.colGenre})
         Me.listTrackStats.GridLines = True
+        Me.listTrackStats.HideSelection = False
         Me.listTrackStats.Location = New System.Drawing.Point(217, 17)
         Me.listTrackStats.MultiSelect = False
         Me.listTrackStats.Name = "listTrackStats"
@@ -169,6 +171,7 @@ Partial Class StatsForm
         '
         Me.listRadioStats.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.ColumnHeader2, Me.ColumnHeader3})
         Me.listRadioStats.GridLines = True
+        Me.listRadioStats.HideSelection = False
         Me.listRadioStats.Location = New System.Drawing.Point(217, 352)
         Me.listRadioStats.MultiSelect = False
         Me.listRadioStats.Name = "listRadioStats"
