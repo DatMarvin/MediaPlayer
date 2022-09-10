@@ -311,7 +311,7 @@
     End Function
 
     Public Sub execute()
-        Form1.keyExecute(Me)
+        HotkeyService.keyExecute(Me)
     End Sub
     Public Overrides Function ToString() As String
         Return name.ToString()
