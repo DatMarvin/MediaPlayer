@@ -20,7 +20,6 @@ Public Class Form1
     ReadOnly rnd As New Random
 
 
-    Dim lockChange As Boolean = False
 
     Public currTrack As Track
     Public last As Track
@@ -100,7 +99,7 @@ Public Class Form1
 
         VersionUpdateService.checkForVersionUpdate()
 
-        MinimumSize = New Size(minWidth, minHeight)
+
 
         SettingsService.initSystemSettings()
 
@@ -108,7 +107,7 @@ Public Class Form1
         Folder.invalidateFolders(Folder.top)
         Track.invalidateTracks(True)
 
-        initPlayerSettings()
+        SettingsService.initPlayerSettings()
 
 
         Key.initKeys()
@@ -120,23 +119,17 @@ Public Class Form1
         wmp.settings.balance = balance
         wmp.settings.rate = playRate
 
-        formResize()
+        loadWinPosSize()
         FormUtils.colorForm(Me)
 
+
         AutoStarts.executeAutoStarts()
-
-
         KeyloggerModule.keyloggerInit()
-
         GadgetsForm.initMacrosTable()
 
         updatePlayMode()
 
-        alltime.Start()
-        keyt.Start()
-        clickcountt.Start()
-        radiotimer.Start()
-        iniValT.Start()
+        startTimers()
 
         If My.Application.CommandLineArgs.Count = 0 Then
 
@@ -222,7 +215,23 @@ Public Class Form1
 
     End Sub
 
+
+    Sub startTimers()
+        alltime.Start()
+        keyt.Start()
+        clickcountt.Start()
+        radiotimer.Start()
+        iniValT.Start()
+    End Sub
+
     Sub loadWinPosSize()
+        MinimumSize = New Size(minWidth, minHeight)
+
+        If Not saveWinPosSize Then
+            formResize()
+            Return
+        End If
+
         Dim x, y, w, h As Integer
 
         Dim siz As String = SettingsService.getSetting(SettingsIdentifier.WIN_SIZE)
@@ -254,19 +263,10 @@ Public Class Form1
 
 
     Private Sub keys_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles keyt.Tick
-        If Not formLocked And (Not keylogger Or KeyloggerModule.allowHotkeys) Then keyPressHandler()
+        HotkeyService.keyPressHandler()
     End Sub
 
-    Private Sub globalKeyPressHandler()
-        If Not keylogger Or KeyloggerModule.allowHotkeys Then
-            If Key.keyList(Key.keyName.Hotkey_Toggle).pressed Then
-                If Not optionsMode Then
-                    lockFormSwitch()
-                    keydelay(200)
-                End If
-            End If
-        End If
-    End Sub
+
 
     Sub macroKeyPressHandler()
 
@@ -282,7 +282,7 @@ Public Class Form1
                                 Catch ex As Exception
                                     Throw ex '  MsgBox(ex)
                                 End Try
-                                keydelay()
+                                HotkeyService.startHotkeyDelay()
                             End If
                         End If
                     End If
@@ -294,309 +294,16 @@ Public Class Form1
             '    Dim img As Drawing.Image = My.Computer.Clipboard.GetImage()
             '    img.Save(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) & "\sc.png")
             '    Process.Start("mspaint", Environment.GetFolderPath(Environment.SpecialFolder.Desktop) & "\sc.png")
-            '    keydelay()
+            '    HotkeyService.startHotkeyDelay()
             'End If
         End If
     End Sub
 
-    Private Sub keyPressHandler()
-        If lockChange Then
-            lockChange = False
-            Exit Sub
-        End If
 
-        Dim pressed As New List(Of Key)
-        For Each k As Key In Key.keyList
-            If k.pressed() Then
-                pressed.Add(k)
-            End If
-        Next
-        If pressed.Count > 0 Then
-            For Each k As Key In pressed
-                k.execute()
-            Next
-        End If
 
-    End Sub
-    Public Sub keyExecute(ByVal kNum As Key.keyName)
-        keyExecute(Key.keyList(kNum))
-    End Sub
-    Public Sub keyExecute(ByVal k As Key)
-        Select Case k.name
-            Case Key.keyName.Play_Pause
-                If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    If radioEnabled Then
-                        wmp.settings.mute = Not wmp.settings.mute
-                    Else
-                        wmp.Ctlcontrols.pause()
-                    End If
-                ElseIf wmp.playState = WMPLib.WMPPlayState.wmppsPaused Then
-                    If Not radioEnabled Then
-                        wmp.Ctlcontrols.play()
-                    Else
-                        saveRadioTime()
-                        tv.Enabled = False
-                        l2_2.Enabled = False
-                        wmpstart(l2.SelectedItem)
-                    End If
-                ElseIf wmp.playState = WMPLib.WMPPlayState.wmppsUndefined Then
-                    If Not radioEnabled Then
-                        If l2.SelectedIndex = -1 Then
-                            setlistselected()
-                            playlist(l2_2.SelectedIndex).play()
-                        Else
-                            l2.SelectedItem.play()
-                        End If
-                    Else
-                        saveRadioTime()
-                        wmpstart(l2.SelectedItem)
-                    End If
-                Else
 
-                End If
-                keydelay()
-
-            Case Key.keyName.Next_Track
-2:              If Not radioEnabled Then
-                    playNextTrack()
-                    keydelay()
-                Else
-                    If Not l2.SelectedIndex = l2.Items.Count - 1 Then
-                        saveRadioTime()
-                        l2.SelectedIndex += 1
-                        wmpstart(l2.SelectedItem)
-                        keydelay()
-                    End If
-                End If
-                Exit Sub
-            Case Key.keyName.Previous_Track
-3:              If Not radioEnabled Then
-                    playPrevTrack()
-                    keydelay()
-                Else
-                    If Not l2.SelectedIndex = 0 Then
-                        saveRadioTime()
-                        l2.SelectedIndex -= 1
-                        wmpstart(l2.SelectedItem)
-                        keydelay()
-                    End If
-                End If
-            Case Key.keyName.Volume_Mute
-                wmp.settings.mute = Not wmp.settings.mute
-                keydelay()
-            Case Key.keyName.Volume_Min
-                wmp.settings.volume = 1
-                keydelay(100)
-            Case Key.keyName.Volume_Half
-                wmp.settings.volume = 50
-                keydelay()
-            Case Key.keyName.Volume_Max
-                wmp.settings.volume = 100
-                keydelay(100)
-            Case Key.keyName.Volume_Down
-                If wmp.settings.volume > 0 Then
-                    If wmp.settings.volume < 51 Then
-                        wmp.settings.volume -= Int(wmp.settings.volume / 5) + 1
-                    ElseIf wmp.settings.volume < 76 Then
-                        wmp.settings.volume = 50
-                    Else
-                        wmp.settings.volume = 75
-                    End If
-                    keydelay(50)
-                End If
-            Case Key.keyName.Volume_Up
-                If wmp.settings.volume < 100 Then
-                    If wmp.settings.volume < 50 Then
-                        wmp.settings.volume += Int(wmp.settings.volume / 5) + 1
-                    ElseIf wmp.settings.volume < 75 Then
-                        wmp.settings.volume = 75
-                    Else
-                        wmp.settings.volume = 100
-                    End If
-                    keydelay(50)
-                End If
-            Case Key.keyName.Fast_Forward
-                If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    Try
-                        wmp.Ctlcontrols.currentPosition += 5
-                    Catch ex As Exception
-                    End Try
-                End If
-            Case Key.keyName.Slow_Forward
-                If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    Try
-                        wmp.Ctlcontrols.currentPosition += 1
-                    Catch ex As Exception
-                    End Try
-                End If
-            Case Key.keyName.Fast_Rewind
-                If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    Try
-                        wmp.Ctlcontrols.currentPosition -= 5
-                    Catch ex As Exception
-                    End Try
-                End If
-            Case Key.keyName.Slow_Rewind
-                If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    Try
-                        wmp.Ctlcontrols.currentPosition -= 1
-                    Catch ex As Exception
-                    End Try
-                End If
-            Case Key.keyName.Repeat_Mode
-                changePlayMode(PlayMode.REPEAT)
-            Case Key.keyName.Random_Mode
-                changePlayMode(PlayMode.RANDOM)
-            Case Key.keyName.Source_Local
-                changeSourceMode(0)
-            Case Key.keyName.Source_Radio
-                changeSourceMode(1)
-            Case Key.keyName.Tree_Up
-                If Not radioEnabled Then
-                    If Not IsNothing(tv.SelectedNode.PrevNode) Or Not IsNothing(tv.SelectedNode.Parent) Then
-                        If Not IsNothing(tv.SelectedNode.PrevNode) Then
-                            tv.SelectedNode = tv.SelectedNode.PrevNode
-                        ElseIf Not IsNothing(tv.SelectedNode.Parent) Then
-                            tv.SelectedNode = tv.SelectedNode.Parent
-                        End If
-                        tv_AfterSelectSUB()
-                        keydelay()
-                    End If
-                End If
-            Case Key.keyName.Tree_Down
-                If Not radioEnabled Then
-                    If Not IsNothing(tv.SelectedNode.NextNode) Then
-                        tv.SelectedNode = tv.SelectedNode.NextNode
-                    Else
-                        If tv.SelectedNode.Nodes.Count > 0 Then
-                            tv.SelectedNode = tv.SelectedNode.Nodes(0)
-                        End If
-                    End If
-                    tv_AfterSelectSUB()
-                    keydelay()
-                End If
-            Case Key.keyName.Track_ToQueue
-                'File.Copy(l2_2.SelectedItem.fullpath, "C:\users\marvin\music\Chillen\" & l2_2.SelectedItem.name & ".mp3")
-                'l2_2.SelectedIndex += 1
-                'wmpstart(l2_2.Items(l2_2.SelectedIndex))
-                'keydelay()
-                'Exit Sub
-                TrackToQueue()
-            Case Key.keyName.Track_PlayNext
-                Dim l As ListBox = getSelectedList()
-                Dim selTrack As Track = l.SelectedItem
-                selTrack.playNext()
-                If l Is l2 Then
-                    If removeNextTrack Then
-                        l2.Items.Remove(selTrack)
-                        l2.SelectedIndex = -1
-                    End If
-                End If
-                keydelay()
-            Case Key.keyName.Track_Remove
-                If removeItem(True) Then
-                    keydelay()
-                End If
-            Case Key.keyName.Track_Delete
-                If deleteTrack(getSelectedTrack(), False) Then
-                    keydelay()
-                End If
-            Case Key.keyName.Track_Loop
-                If Not radioEnabled Then
-                    If wmp.Ctlcontrols.currentPosition >= 0 Then
-                        If trackLoop = LoopMode.NO Then
-                            trackLoop = LoopMode.INTERMEDIATE
-                            labelLoop.Cursor = Cursors.Hand
-                            loopVals(1) = wmp.Ctlcontrols.currentPosition
-                            labelStatsUpdate()
-                            keydelay(200)
-                        ElseIf trackLoop = LoopMode.INTERMEDIATE Then
-                            trackLoop = LoopMode.YES
-                            labelLoop.Cursor = Cursors.Hand
-                            loopVals(2) = wmp.Ctlcontrols.currentPosition
-                            keydelay()
-                            keydelay(150)
-                        ElseIf trackLoop = LoopMode.YES Then
-                            resetLoop()
-                            keydelay(100)
-                        End If
-                    End If
-                End If
-            Case Key.keyName.Search
-                If Not radioEnabled Then
-                    If Not ContainsFocus Then
-                        Key.keyList.Item(Key.keyName.Restore_Window).execute()
-                    End If
-                    tSearch.Focus()
-                    initSearch()
-                    keydelay()
-                End If
-            Case Key.keyName.Next_Part
-                switchpart(2)
-                keydelay()
-            Case Key.keyName.Previous_Part
-                switchpart(1)
-                keydelay()
-            Case Key.keyName.Count_Sub
-                Dim l As ListBox = getSelectedList()
-                If l IsNot Nothing Then
-                    saveRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem, l.SelectedItem.count - 1)
-                    labelStatsUpdate(l)
-                End If
-                keydelay(150)
-            Case Key.keyName.Count_Add
-                '    wmp.Ctlcontrols.pause() : Dim SAPI : SAPI = CreateObject("SAPI.spvoice") 
-                ': SAPI.speak(l2.SelectedItem) : wmp.Ctlcontrols.play()
-                Dim l As ListBox = getSelectedList()
-                If l IsNot Nothing Then
-                    Dim c As Integer = l.SelectedItem.count
-                    If c = 0 Then
-                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem, loadRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem.name) + 1)
-                    Else
-                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, l.SelectedItem, l.SelectedItem.count + 1)
-                        labelStatsUpdate(l)
-                    End If
-                End If
-                keydelay(150)
-            Case Key.keyName.Clicker_On
-                If autoClicker Then clickerTimer.Start()
-            Case Key.keyName.Clicker_Off
-                'handled in alltime
-            Case Key.keyName.Cursor_Up
-                If cursorMover Then
-                    Cursor.Position = New Point(Cursor.Position.X, Cursor.Position.Y - cursorMoverIncr)
-                    keydelay(cursorMoverDelay)
-                End If
-            Case Key.keyName.Cursor_Right
-                If cursorMover Then
-                    Cursor.Position = New Point(Cursor.Position.X + cursorMoverIncr, Cursor.Position.Y)
-                    keydelay(cursorMoverDelay)
-                End If
-
-            Case Key.keyName.Cursor_Down
-                If cursorMover Then
-                    Cursor.Position = New Point(Cursor.Position.X, Cursor.Position.Y + cursorMoverIncr)
-                    keydelay(cursorMoverDelay)
-                End If
-            Case Key.keyName.Cursor_Left
-                If cursorMover Then
-                    Cursor.Position = New Point(Cursor.Position.X - cursorMoverIncr, Cursor.Position.Y)
-                    keydelay(cursorMoverDelay)
-                End If
-            Case Key.keyName.Restore_Window
-                Utils.SwitchTo(Process.GetCurrentProcess.MainWindowHandle)
-        End Select
-    End Sub
-
-    Sub keydelay(Optional ByVal ms As Integer = 0)
-        keydelayt.Interval = IIf(ms = 0, delayMs, ms)
-        keydelayt.Start()
-        keyt.Stop()
-    End Sub
     Private Sub keydelayt_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles keydelayt.Tick
-        keydelayt.Stop()
-        keydelayt.Interval = delayMs
-        If Not formLocked Then keyt.Enabled = True
+        HotkeyService.stopHotkeyDelayTimer()
     End Sub
 
     Private Sub iniValT_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles iniValT.Tick
@@ -630,11 +337,11 @@ Public Class Form1
 
         TCPHandler()
 
-        globalKeyPressHandler()
+        HotkeyService.globalKeyPressHandler()
 
         macroKeyPressHandler()
 
-        clickGadgetHandler()
+        ClickGadget.clickGadgetHandler()
 
         playStateHandler()
 
@@ -796,7 +503,7 @@ Public Class Form1
         FormUtils.setLockImage()
         If formLocked Then
             keyt.Stop()
-            lockChange = True
+            HotkeyService.lockChange = True
         Else
             keyt.Start()
             keydelayt.Interval = delayMs
@@ -854,15 +561,15 @@ Public Class Form1
         If Not optionsMode Then
             If SettingsService.settingsInitialized AndAlso Not formLocked Then lockFormSwitch()
             OptionsForm.Text = title
-                OptionsForm.state = state
-                OptionsForm.arguments = args
-                OptionsForm.TopMost = asDialog
-                If asDialog Then
-                    OptionsForm.ShowDialog()
-                Else
-                    OptionsForm.Show()
-                End If
+            OptionsForm.state = state
+            OptionsForm.arguments = args
+            OptionsForm.TopMost = asDialog
+            If asDialog Then
+                OptionsForm.ShowDialog()
+            Else
+                OptionsForm.Show()
             End If
+        End If
     End Sub
 
     Private Sub menuGadgets_Click(sender As Object, e As EventArgs) Handles menuGadgets.Click
@@ -2090,7 +1797,7 @@ Public Class Form1
 
 #End Region
 
-    Private Sub TrackToQueue() 'handles toqueue command
+    Public Sub TrackToQueue() 'handles toqueue command
         If Not radioEnabled Then
             Dim l As ListBox = getSelectedList()
             If Not TypeOf l.SelectedItem Is Track Then Return
@@ -2107,7 +1814,7 @@ Public Class Form1
                     l2.SelectedIndex = -1
                 End If
             End If
-            keydelay()
+            HotkeyService.startHotkeyDelay()
         End If
     End Sub
 
@@ -2724,7 +2431,7 @@ Public Class Form1
             End If
         End If
         saveSetting(SettingsIdentifier.MUSIC_SOURCE, mode)
-        keydelay()
+        HotkeyService.startHotkeyDelay()
 
     End Sub
 #End Region
@@ -3734,11 +3441,11 @@ Public Class Form1
     Sub setSoundDevice(ByVal dev As String)
         Try
             Shell(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) & "\Utils\SoundVolumeView\SoundVolumeView.exe /SwitchDefault " & dev & " 0")
-            keydelay(250)
+            HotkeyService.startHotkeyDelay(250)
         Catch ex As Exception
             keyt.Stop()
             MsgBox(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) & "\Utils\SoundVolumeView\SoundVolumeView.exe not found." & vbNewLine & "Please install manually to that location.")
-            keydelay()
+            HotkeyService.startHotkeyDelay()
         End Try
     End Sub
 
@@ -3855,7 +3562,7 @@ Public Class Form1
             If comm = "ms" Then
                 If radioEnabled Then changeSourceMode(0)
                 initSearch()
-                keyExecute(Key.keyName.Restore_Window)
+                HotkeyService.keyExecute(Key.keyName.Restore_Window)
                 tSearch.Text = data
             ElseIf comm = "cm" Then
                 setSetting(SettingsIdentifier.CURSOR_MOVER_INCR, CInt(data))
@@ -3902,11 +3609,6 @@ Public Class Form1
         End If
     End Sub
 
-    Private Sub Form1_Shown(sender As Object, e As EventArgs) Handles Me.Shown
-        If saveWinPosSize Then
-            loadWinPosSize()
-        End If
-    End Sub
 
     Private Sub menuStatisticsTracks_Click(sender As Object, e As EventArgs) Handles menuStatisticsTracks.Click
         openOverlay(eOverlayMode.STATS_TRACKS)

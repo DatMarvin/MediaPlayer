@@ -132,6 +132,7 @@
     <Compile Include="src\service\gadgets\AutoStarts.vb" />
     <Compile Include="src\service\ExceptionService.vb" />
     <Compile Include="src\service\FileSystemWatcher.vb" />
+    <Compile Include="src\service\HotkeyService.vb" />
     <Compile Include="src\service\settings\IImmutableSetting.vb" />
     <Compile Include="src\service\settings\IniService.vb" />
     <Compile Include="src\service\settings\ISetting.vb" />
@@ -161,7 +162,7 @@
     </Compile>
     <Compile Include="src\business\Genre.vb" />
     <Compile Include="src\business\Key.vb" />
-    <Compile Include="src\service\Keylogger.vb" />
+    <Compile Include="src\service\gadgets\Keylogger.vb" />
     <Compile Include="src\forms\LyricsForm.designer.vb">
       <DependentUpon>LyricsForm.vb</DependentUpon>
     </Compile>
