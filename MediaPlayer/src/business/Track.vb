@@ -447,7 +447,7 @@ Public Class Track
                     files = IniService.iniGetAllValues(Folder.folders(i).fullPath, playlistPath)
                 Else
                     If IO.Directory.Exists(Folder.folders(i).fullPath) Then
-                        files = Form1.getAudioFiles(Folder.folders(i).fullPath)
+                        files = OperatingSystem.getAudioFiles(Folder.folders(i).fullPath)
                     End If
                 End If
                 For k = 0 To files.Count - 1

@@ -63,7 +63,7 @@ Public Class LyricsForm
     Sub openLyrics(track As Track)
         If queuedTrack Is Nothing Then
             queuedTrack = track
-            If Form1.isValidDirectoryPath(lyrpath) Then
+            If OperatingSystem.isValidDirectoryPath(lyrpath) Then
                 If state = lyricState.MODIFIED Then
                     saveLyrics(Not lyricsAutoSave)
                 End If

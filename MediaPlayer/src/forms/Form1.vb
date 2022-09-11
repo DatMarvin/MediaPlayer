@@ -510,12 +510,10 @@ Public Class Form1
     Private Sub ImportPlaylistToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MenuSourceExternalMedia.Click
         If Not radioEnabled Then
             If Not searchState = SearchState.NONE Then cancelSearch()
-            Dim ao As New OpenFileDialog
-            ao.Multiselect = True
-            ao.ShowDialog()
-            If Not ao.FileNames.Count = 0 Then
-                Dim addFolder As Folder = New Folder(ao.FileNames(0).Substring(0, ao.FileNames(0).LastIndexOf("\") + 1))
-                addFolder.addFolder(ao.FileNames())
+            Dim selectedFiles() As String = OperatingSystem.getFilesDialog()
+            If selectedFiles IsNot Nothing AndAlso selectedFiles.Length > 0 Then
+                Dim addFolder As Folder = New Folder(selectedFiles(0).Substring(0, selectedFiles(0).LastIndexOf("\") + 1))
+                addFolder.addFolder(selectedFiles)
                 l2.SelectedIndex = -1
             Else
                 Dim a As String = InputBox("Type in Folder to import", , My.Computer.FileSystem.SpecialDirectories.MyMusic & "\")
@@ -523,7 +521,7 @@ Public Class Form1
                     If Directory.Exists(a) Then
                         Dim n As Integer = 0
                         For Each fil As String In My.Computer.FileSystem.GetFiles(a)
-                            If dll.hasAudioExt(fil) Then
+                            If Utils.hasAudioExt(fil) Then
                                 Track.getTrack(fil).addToPlaylist()
                                 n += 1
                             End If
@@ -2270,14 +2268,6 @@ Public Class Form1
         If Not labelPartName.Text = "" Then My.Computer.Clipboard.SetText(labelPartName.Text)
     End Sub
 
-    'Private Sub wmp_ClickEvent(ByVal sender As Object, ByVal e As WMPLib._WMPOCXEvents_ClickEvent) Handles wmp.ClickEvent
-    '    If Not radio AndAlso currTrack IsNot Nothing Then
-    '        If e.fY + wmp.Top < wmp.Height - 42 Then
-    '            Label_lastfile()
-    '        End If
-    '    End If
-    'End Sub
-
     Private Sub picRepeat_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles picRepeat.Click
         changePlayMode(PlayMode.REPEAT)
     End Sub
@@ -3039,11 +3029,11 @@ Public Class Form1
                     Case "play_pause"
                         Key.keyList(Key.keyName.Play_Pause).execute()
                     Case "headset"
-                        setSoundDevice("Headset")
+                        AudioService.setSoundDevice("Headset")
                     Case "speakers"
-                        setSoundDevice("Speaker")
+                        AudioService.setSoundDevice("Speaker")
                     Case "bluetooth"
-                        setSoundDevice("Speakers")
+                        AudioService.setSoundDevice("Speakers")
                     Case "volume_min"
                         Key.keyList(Key.keyName.Volume_Min).execute()
                     Case "volume_down"
@@ -3150,13 +3140,13 @@ Public Class Form1
                     Case "mmouse"
                         Utils.mMouseClick()
                     Case "sysvol_down"
-                        SysVol.system_volume_down()
-                        If lastTCPCommand = comm Then SysVol.system_volume_down()
+                        AudioService.system_volume_down()
+                        If lastTCPCommand = comm Then AudioService.system_volume_down()
                     Case "sysvol_up"
-                        SysVol.system_volume_up()
-                        If lastTCPCommand = comm Then SysVol.system_volume_up()
+                        AudioService.system_volume_up()
+                        If lastTCPCommand = comm Then AudioService.system_volume_up()
                     Case "sysvol_mute"
-                        SysVol.system_volume_mute()
+                        AudioService.system_volume_mute()
                     Case Else
 
                         comm = comm.Replace(vbLf, "")
@@ -3172,7 +3162,7 @@ Public Class Form1
                         If comm.StartsWith("magnify_") Then
                             Dim zoom As Integer = comm.Substring(comm.LastIndexOf("magnify_") + 8)
                             If zoom > 100 Then
-                                If Not isProcessAlive("magnify") Then Process.Start("magnify") 'Shell("magnify")
+                                If Not OperatingSystem.isProcessAlive("magnify") Then Process.Start("magnify") 'Shell("magnify")
                             Else
                                 Utils.killProc("magnify")
                             End If
@@ -3416,175 +3406,16 @@ Public Class Form1
 #End Region
 
 #Region "System Functions"
-    Function isFileString(ByVal s As String) As Boolean
-        If s.Contains(":") And s.Contains("\") And s.Contains(".") Then
-            If s.LastIndexOf(".") > s.LastIndexOf("\") Then Return True
-        End If
-        Return False
-    End Function
-
-    Function isValidFilePath(ByVal s As String, Optional ByVal ext As String = "") As Boolean
-        Return s.Length > 3 AndAlso Not s.Contains("\\") AndAlso Not s.EndsWith(" ") AndAlso Not s.StartsWith(" ") AndAlso s.Substring(1, 2) = ":\" AndAlso Not s.EndsWith("\") AndAlso s.Contains("\") AndAlso Not s.EndsWith(".") AndAlso IIf(ext = "", True, s.EndsWith("." & ext))
-    End Function
-
-    Function isValidDirectoryPath(ByVal s As String) As Boolean
-        Return s.Length >= 3 AndAlso Not s.Contains("\\") AndAlso Not s.EndsWith(" ") AndAlso Not s.StartsWith(" ") AndAlso s.Substring(1, 2) = ":\" AndAlso s.EndsWith("\")
-    End Function
-
-    Function getValidFilePath(ByVal s As String, Optional ByVal ext As String = "") As String
-        If s.Length >= 3 Then
-            Dim d As DirectoryInfo
-            d = New DirectoryInfo(s.Substring(0, 3))
-            If d.Exists Then
-                d = New DirectoryInfo(s.Substring(0, s.LastIndexOf("\")))
-                If d.Exists Then
-                    Dim f As New FileInfo(s)
-                    If f.Exists Then
-                        If ext = "" OrElse f.Extension = ext Then
-                            Return f.FullName
-                        End If
-                    End If
-                End If
-            End If
-        End If
-        Return ""
-    End Function
-
-
-    Function isProcessAlive(name As String) As Boolean
-        For Each p As Process In Process.GetProcessesByName(name)
-            Return True
-        Next
-        Return False
-    End Function
 
 
 
-    Function getAudioFiles(path As String) As List(Of String)
-        Dim res As New List(Of String)
-        If IO.Directory.Exists(path) Then
-            For Each fil As String In My.Computer.FileSystem.GetFiles(path)
-                If dll.hasAudioExt(fil) Then
-                    res.Add(fil)
-                End If
-            Next
-        End If
-        Return res
-    End Function
 
-    Sub setSoundDevice(ByVal dev As String)
-        Try
-            Shell(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) & "\Utils\SoundVolumeView\SoundVolumeView.exe /SwitchDefault " & dev & " 0")
-            HotkeyService.startHotkeyDelay(250)
-        Catch ex As Exception
-            keyt.Stop()
-            MsgBox(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) & "\Utils\SoundVolumeView\SoundVolumeView.exe not found." & vbNewLine & "Please install manually to that location.")
-            HotkeyService.startHotkeyDelay()
-        End Try
-    End Sub
 
-#Region "File Dialogs"
-    Public Function getExactFileDialog(name As String, ext As String, Optional ByVal initDir As String = "") As String
-        Dim op As New OpenFileDialog
-        op.Multiselect = False
-        If Not initDir = "" Then
-            Try
-                Do
-                    initDir = initDir.Substring(0, initDir.LastIndexOf("\"))
-                Loop Until initDir.Count(Function(c) c = "\") <= 1 Or IO.Directory.Exists(initDir)
-                op.InitialDirectory = initDir
-            Catch ex As Exception
-            End Try
-        End If
-        op.Filter = "(" & name & ext & ")|" & name & ext
-        op.ShowDialog()
 
-        If Not op.FileName = "" Then
-            Return op.FileName
-        End If
-        Return ""
-    End Function
-    Public Function getFileDialog(Optional ByVal initDir As String = "", Optional ByVal ext As String = "") As String
-        Dim op As New OpenFileDialog
-        op.Multiselect = False
-        If Not initDir = "" Then
-            Try
-                Do
-                    initDir = initDir.Substring(0, initDir.LastIndexOf("\"))
-                Loop Until initDir.Count(Function(c) c = "\") <= 1 Or IO.Directory.Exists(initDir)
-                op.InitialDirectory = initDir
-                ' op.FileName = def.Substring(def.LastIndexOf("\") + 1)
-            Catch ex As Exception
-            End Try
-        End If
-        If Not ext = "" Then op.Filter = "(*." & ext & ")|*." & ext
-        op.ShowDialog()
-
-        If Not op.FileName = "" Then
-            Return op.FileName
-        End If
-        Return ""
-    End Function
-    Public Function getFilesDialog(Optional ByVal initDir As String = "", Optional ByVal ext As String = "") As String()
-        Dim op As New OpenFileDialog
-        op.Multiselect = True
-        If Not initDir = "" Then
-            Try
-                op.InitialDirectory = initDir.Substring(0, initDir.LastIndexOf("\"))
-            Catch ex As Exception
-            End Try
-        End If
-        If Not ext = "" Then op.Filter = "(*." & ext & ")|*." & ext
-        If op.ShowDialog() = DialogResult.Cancel Then Return Nothing
-        Return op.FileNames
-    End Function
-    Public Function getAudioFilesDialog(Optional ByVal initDir As String = "") As String()
-        Dim op As New OpenFileDialog
-        op.Multiselect = True
-        If Not initDir = "" Then
-            Try
-                op.InitialDirectory = initDir.Substring(0, initDir.LastIndexOf("\"))
-            Catch ex As Exception
-            End Try
-        End If
-        op.Filter = "Audio files|*.mp3;*.wav;*.m4a;*.flac;*.mp3;*.aac"
-
-        If op.ShowDialog() = DialogResult.Cancel Then Return Nothing
-        Return op.FileNames
-    End Function
-
-    Public Function getDirectoryDialog(Optional ByVal def As String = "") As String
-        Dim op As New FolderBrowserDialog
-
-        op.ShowNewFolderButton = True
-
-        If Not def = "" Then
-            Try
-                op.SelectedPath = def
-            Catch ex As Exception
-            End Try
-        End If
-        op.ShowDialog()
-        If Not op.SelectedPath = "" Then
-            Return op.SelectedPath & IIf(op.SelectedPath.EndsWith("\"), "", "\")
-        End If
-        Return ""
-    End Function
-
-    <StructLayout(LayoutKind.Sequential)>
-    Private Structure COPYDATASTRUCT
-        Public dwData As IntPtr
-        Public cbData As Integer
-        Public lpData As String
-    End Structure
-
-    Declare Function GetWindow Lib "user32.dll" (ByVal hWnd As IntPtr, ByVal uCmd As Integer) As IntPtr
-    Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr 'Int32
-    Declare Function SendMessageHM Lib "user32.dll" Alias "SendMessageA" (ByVal hWnd As IntPtr, ByVal wMsg As Int32, ByVal wParam As Int32, ByVal lParam As StringBuilder) As Int32
 
     Protected Overrides Sub WndProc(ByRef m As Message)
         If m.Msg = &H4A Then 'H400 user
-            Dim cds As COPYDATASTRUCT = Marshal.PtrToStructure(m.LParam, GetType(COPYDATASTRUCT))
+            Dim cds As OperatingSystem.COPYDATASTRUCT = Marshal.PtrToStructure(m.LParam, GetType(OperatingSystem.COPYDATASTRUCT))
             Dim comm As String = cds.lpData.Substring(0, 2)
             Dim data As String = cds.lpData.Substring(2)
             If comm = "ms" Then
@@ -3772,7 +3603,7 @@ Public Class Form1
 
     End Sub
 
-#End Region
+
 
 #End Region
 
@@ -3783,7 +3614,9 @@ Public Class Form1
         Me.WindowState = FormWindowState.Normal
     End Sub
 
-
+    Private Sub Button1_Click(sender As Object, e As EventArgs)
+        '   MsgBox(IsValidFileNameOrPath("C:\oer\asder"))
+    End Sub
 
 End Class
 

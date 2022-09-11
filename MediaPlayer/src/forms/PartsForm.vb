@@ -86,7 +86,7 @@ Public Class PartsForm
     Sub loadParts(track As Track)
         If queuedTrack Is Nothing Then
             queuedTrack = track
-            If Form1.isValidDirectoryPath(lyrPath) Then
+            If OperatingSystem.isValidDirectoryPath(lyrpath) Then
                 If state = partState.MODIFIED Then
                     savePart(Not autoSave)
                 End If

@@ -166,7 +166,7 @@ Public Class TrackSelectionForm
     End Sub
 
     Private Sub addExternalButton_Click(sender As Object, e As EventArgs) Handles addExternalButton.Click
-        addTracks(Form1.getAudioFilesDialog(Folder.top.fullPath))
+        addTracks(OperatingSystem.getAudioFilesDialog(Folder.top.fullPath))
     End Sub
 
     Sub addTracks(sourceFiles() As String) 'target folder is var currFolder
@@ -252,8 +252,8 @@ Public Class TrackSelectionForm
             Dim checkedTracks As List(Of Track) = getCheckedTracks()
             If checked.Count = 1 Then
                 Dim currTrack As Track = checkedTracks(0)
-                Dim newSource As String = Form1.getExactFileDialog(currTrack.name, currTrack.ext, currTrack.path)
-                If IO.File.Exists(newSource) And dll.hasAudioExt(newSource) Then
+                Dim newSource As String = OperatingSystem.getExactFileDialog(currTrack.name, currTrack.ext, currTrack.path)
+                If IO.File.Exists(newSource) And Utils.hasAudioExt(newSource) Then
                     IniService.iniWriteValue(currTrack.path, currTrack.name, newSource, playlistPath)
                     currTrack.fullPath = newSource
                     currFolder = currFolder
@@ -264,7 +264,7 @@ Public Class TrackSelectionForm
 
                 End If
             ElseIf checked.Count > 1 Then
-                Dim newSource As String = Form1.getDirectoryDialog()
+                Dim newSource As String = OperatingSystem.getDirectoryDialog()
                 If IO.Directory.Exists(newSource) Then
                     For i = 0 To checkedTracks.Count - 1
                         Dim curr As Track = checkedTracks(i)

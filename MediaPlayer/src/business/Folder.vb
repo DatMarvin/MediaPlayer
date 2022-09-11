@@ -54,7 +54,7 @@ Public Class Folder
         If isVirtual Then
             files = IniService.iniGetAllValues(fullPath, playlistPath)
         Else
-            files = Form1.getAudioFiles(fullPath)
+            files = OperatingSystem.getAudioFiles(fullPath)
         End If
         If files IsNot Nothing Then
             Dim loadFails As New List(Of Track)

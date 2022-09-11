@@ -1027,7 +1027,7 @@ Public Class OptionsForm
         End If
     End Sub
     Private Sub publishAddButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles publishAddButton.Click
-        Dim res() As String = Form1.getFilesDialog(My.Application.Info.DirectoryPath & "\")
+        Dim res() As String = OperatingSystem.getFilesDialog(My.Application.Info.DirectoryPath & "\")
         If res IsNot Nothing Then
             Dim err As String = ""
             'publishfilelist extra files not working
@@ -1075,7 +1075,7 @@ Public Class OptionsForm
     Private Sub publishButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles publishButton.Click
         If dll.ftpThread IsNot Nothing AndAlso dll.ftpThread.IsAlive Then dll.ftpThread.Abort()
         If Not dll.req.IsBusy Then
-            If Form1.isValidDirectoryPath(ftpPath) Then
+            If OperatingSystem.isValidDirectoryPath(ftpPath) Then
                 addCoreFiles()
                 For Each pubItem As String In listPublish.Items
                     dll.publishFileList.Add(pubItem)
@@ -1209,19 +1209,19 @@ Public Class OptionsForm
 
 #Region "Paths"
     Private Sub bStatsFile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles bStatsFile.Click
-        Dim s As String = Form1.getFileDialog(IIf(checkFileValidity(tStatsFile) >= 0, tStatsFile.Text, My.Application.Info.DirectoryPath & "\"))
+        Dim s As String = OperatingSystem.getFileDialog(IIf(checkFileValidity(tStatsFile) >= 0, tStatsFile.Text, My.Application.Info.DirectoryPath & "\"))
         If Not s = "" Then tStatsFile.Text = s
     End Sub
     Private Sub bMusicDir_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles bMusicDir.Click
-        Dim s As String = Form1.getDirectoryDialog(tMusicDir.Text)
+        Dim s As String = OperatingSystem.getDirectoryDialog(tMusicDir.Text)
         If Not s = "" Then tMusicDir.Text = s
     End Sub
     Private Sub bPlaylistFile_Click(sender As Object, e As EventArgs) Handles bPlaylistFile.Click
-        Dim s As String = Form1.getFileDialog(tPlaylistFile.Text)
+        Dim s As String = OperatingSystem.getFileDialog(tPlaylistFile.Text)
         If Not s = "" Then tPlaylistFile.Text = s
     End Sub
     Private Sub bDatesFile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles bDatesFile.Click
-        Dim s As String = Form1.getFileDialog(tDatesFile.Text)
+        Dim s As String = OperatingSystem.getFileDialog(tDatesFile.Text)
         If Not s = "" Then tDatesFile.Text = s
     End Sub
 
@@ -1241,11 +1241,11 @@ Public Class OptionsForm
     End Sub
 
     Private Sub bLyricsDir_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles bLyricsDir.Click
-        Dim s As String = Form1.getDirectoryDialog(tLyricsDir.Text)
+        Dim s As String = OperatingSystem.getDirectoryDialog(tLyricsDir.Text)
         If Not s = "" Then tLyricsDir.Text = s
     End Sub
     Private Sub bFtpDir_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles bFtpDir.Click
-        Dim s As String = Form1.getDirectoryDialog(tFtpDir.Text)
+        Dim s As String = OperatingSystem.getDirectoryDialog(tFtpDir.Text)
         If Not s = "" Then tFtpDir.Text = s
     End Sub
 
@@ -1298,7 +1298,7 @@ Public Class OptionsForm
     End Function
 
     Function checkFileValidity(ByVal t As TextBox, Optional ByVal resolveError As Boolean = False) As Integer
-        If Form1.isValidFilePath(t.Text) Then
+        If OperatingSystem.isValidFilePath(t.Text) Then
             If File.Exists(t.Text) Then
                 t.BackColor = Color.Green
                 Return 1
@@ -1324,7 +1324,7 @@ Public Class OptionsForm
     End Function
 
     Function checkDirectoryValidity(ByVal t As TextBox, Optional ByVal resolveError As Boolean = False) As Integer
-        If Form1.isValidDirectoryPath(t.Text) Then
+        If OperatingSystem.isValidDirectoryPath(t.Text) Then
             If Directory.Exists(t.Text) Then
                 t.BackColor = Color.Green
                 Return 1

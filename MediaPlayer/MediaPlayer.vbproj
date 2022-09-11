@@ -131,8 +131,9 @@
     <Compile Include="src\business\enums\SettingsEnums.vb" />
     <Compile Include="src\service\gadgets\AutoStarts.vb" />
     <Compile Include="src\service\ExceptionService.vb" />
-    <Compile Include="src\service\FileSystemWatcher.vb" />
+    <Compile Include="src\service\operatingsystem\FileSystemWatcher.vb" />
     <Compile Include="src\service\HotkeyService.vb" />
+    <Compile Include="src\service\operatingsystem\OperatingSystem.vb" />
     <Compile Include="src\service\settings\IImmutableSetting.vb" />
     <Compile Include="src\service\settings\IniService.vb" />
     <Compile Include="src\service\settings\ISetting.vb" />
@@ -215,7 +216,7 @@
     <Compile Include="src\forms\StatsForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="src\utils\SysVol.vb" />
+    <Compile Include="src\service\operatingsystem\AudioService.vb" />
     <Compile Include="src\network\Tcp.vb" />
     <Compile Include="src\business\Track.vb" />
     <Compile Include="src\business\TrackPart.vb" />

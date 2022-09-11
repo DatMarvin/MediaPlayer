@@ -383,7 +383,7 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub autostartFileDialogButton_Click(sender As Object, e As EventArgs) Handles autostartFileDialogButton.Click
-        Dim res = Form1.getFileDialog(My.Application.Info.DirectoryPath & "\")
+        Dim res = OperatingSystem.getFileDialog(My.Application.Info.DirectoryPath & "\")
         If Not res = "" Then
             textboxAutostartPath.Text = res
         End If
@@ -487,7 +487,7 @@ Public Class GadgetsForm
     End Sub
 
     Private Sub macroFileButton_Click(sender As Object, e As EventArgs) Handles macroFileButton.Click
-        Dim res = Form1.getFileDialog(My.Application.Info.DirectoryPath & "\")
+        Dim res = OperatingSystem.getFileDialog(My.Application.Info.DirectoryPath & "\")
         If Not res = "" Then
             textMacroPath.Text = res
         End If
@@ -585,7 +585,7 @@ Public Class GadgetsForm
 
 
     Private Sub keyloggerFileButton_Click(sender As Object, e As EventArgs) Handles keyloggerFileButton.Click
-        Dim res = Form1.getFileDialog(My.Application.Info.DirectoryPath & "\")
+        Dim res = OperatingSystem.getFileDialog(My.Application.Info.DirectoryPath & "\")
         If Not res = "" Then
             textKeyloggerPath.Text = res
         End If
