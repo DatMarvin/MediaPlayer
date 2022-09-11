@@ -26,13 +26,7 @@ Public Class Utils
     Public Const MOUSEEVENTF_MIDDLEDOWN = &H20 : Private Const MOUSEEVENTF_MIDDLEUP = &H40
     Public Const MOUSEEVENTF_WHEELROTATE = &H800
 
-    <DllImport("user32.dll", EntryPoint:="SendMessageA")>
-    Public Shared Sub SendMessage(
-      ByVal hWnd As IntPtr,
-      ByVal uMsg As Int32,
-      ByVal wParam As Int32,
-      ByVal lParam As Int32)
-    End Sub
+
     Public Declare Function BlockInput Lib "user32.dll" (ByVal fBlock As Boolean) As Boolean
     Function isWindowInForeground(ptr As IntPtr) As Boolean
         Return getForegroundWindow() = ptr
@@ -494,29 +488,8 @@ Public Class Utils
         SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE Or SWP_NOSIZE Or SWP_SHOWWINDOW)
     End Sub
 
-    Public Sub SetVolume(ByVal vol As Integer)
-        If vol > 100 Then vol = 100
-        If vol < 0 Then vol = 0
-        Dim DevEnum As New MMDeviceEnumerator
-        Dim device As MMDevice = DevEnum.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia)
-        device.AudioEndpointVolume.MasterVolumeLevelScalar = vol / 100.0F
-    End Sub
-    Private Enum Params As Int32
-        SC_MONITORPOWER = &HF170    ' wParam
-        WM_SYSCOMMAND = &H112       ' uMsg
-        TURN_MONITOR_OFF = 2        ' Monitor ausschalten
-        TURN_MONITOR_ON = -1        ' Monitor einschalten
-    End Enum
-    Public Sub SetMonitorState(ByVal Index As Integer, ByVal Handle As IntPtr)
-        Select Case Index
-            Case 0
-                SendMessage(Handle, Params.WM_SYSCOMMAND, Params.SC_MONITORPOWER,
-                  Params.TURN_MONITOR_OFF)
-            Case 1
-                SendMessage(Handle, Params.WM_SYSCOMMAND, Params.SC_MONITORPOWER,
-                  Params.TURN_MONITOR_ON)
-        End Select
-    End Sub
+
+
 
 
 #Region "FTP"

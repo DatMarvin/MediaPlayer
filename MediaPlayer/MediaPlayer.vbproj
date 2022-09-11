@@ -134,6 +134,7 @@
     <Compile Include="src\service\operatingsystem\FileSystemWatcher.vb" />
     <Compile Include="src\service\HotkeyService.vb" />
     <Compile Include="src\service\operatingsystem\OperatingSystem.vb" />
+    <Compile Include="src\service\remotecontrol\TcpRemoteControl.vb" />
     <Compile Include="src\service\settings\IImmutableSetting.vb" />
     <Compile Include="src\service\settings\IniService.vb" />
     <Compile Include="src\service\settings\ISetting.vb" />

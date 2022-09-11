@@ -447,7 +447,7 @@ Public Module SettingsService
 
         Shared Function remoteStartUp(value As String) As Boolean
             If CBool(value) Then
-                Form1.TcpStart(SettingsService.getSetting(SettingsIdentifier.PORT), False)
+                TcpRemoteControl.resetConnection(SettingsService.getSetting(SettingsIdentifier.PORT), False)
             End If
             Return True
         End Function

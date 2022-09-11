@@ -36,7 +36,7 @@ Public Class OptionsForm
     End Property
     ReadOnly Property remoteTcp() As Tcp
         Get
-            Return Form1.remotetcp
+            Return TcpRemoteControl.remoteTcp
         End Get
     End Property
 
@@ -917,15 +917,15 @@ Public Class OptionsForm
 
     Private Sub stopConnectionButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles stopConnectionButton.Click
         If listPairedIps.SelectedIndex > -1 Then
-            Form1.TcpStopConnection(CStr(listPairedIps.SelectedItem), "force")
+            TcpRemoteControl.stopConnection(CStr(listPairedIps.SelectedItem), "force")
         End If
     End Sub
     Private Sub stopAllConnectionsButton_Click(sender As Object, e As EventArgs) Handles stopAllConnectionsButton.Click
-        Form1.TcpStopAllConnections("force")
+        TcpRemoteControl.stopAllConnections("force")
     End Sub
 
     Private Sub startButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles startButton.Click
-        Form1.TcpStartListener(remoteTcp.port)
+        TcpRemoteControl.startListener(remoteTcp.port)
     End Sub
 
 
@@ -938,7 +938,7 @@ Public Class OptionsForm
 
     Private Sub resetButton2_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles resetButton2.Click
         If Not tPort.Text = "" AndAlso CInt(tPort.Text) < 65536 Then
-            Form1.TcpStart(CInt(tPort.Text))
+            TcpRemoteControl.resetConnection(CInt(tPort.Text))
         End If
         tPort.Text = ""
     End Sub

