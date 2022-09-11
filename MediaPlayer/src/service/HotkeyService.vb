@@ -43,14 +43,14 @@ Public Class HotkeyService
     End Sub
 
     Public Shared Sub startHotkeyDelay(Optional ms As Integer = 0)
-        Form1.keydelayt.Interval = IIf(ms = 0, delayMs, ms)
+        Form1.keydelayt.Interval = IIf(ms = 0, hotkeyDelayMs, ms)
         Form1.keydelayt.Start()
         Form1.keyt.Stop()
     End Sub
 
     Public Shared Sub stopHotkeyDelayTimer()
         Form1.keydelayt.Stop()
-        Form1.keydelayt.Interval = delayMs
+        Form1.keydelayt.Interval = hotkeyDelayMs
         If Not formLocked Then Form1.keyt.Enabled = True
     End Sub
 

@@ -177,6 +177,7 @@ Partial Class OptionsForm
         Me.FontDlg = New System.Windows.Forms.FontDialog()
         Me.g7 = New System.Windows.Forms.GroupBox()
         Me.gadgetFormButton = New System.Windows.Forms.Button()
+        Me.checkMinimizeToIconTray = New System.Windows.Forms.CheckBox()
         Me.groupCommand.SuspendLayout()
         Me.groupModifierKey.SuspendLayout()
         Me.groupMainKey.SuspendLayout()
@@ -1514,6 +1515,7 @@ Partial Class OptionsForm
         '
         'groupUI
         '
+        Me.groupUI.Controls.Add(Me.checkMinimizeToIconTray)
         Me.groupUI.Controls.Add(Me.buttonFolderFont)
         Me.groupUI.Controls.Add(Me.labelWinPosString)
         Me.groupUI.Controls.Add(Me.buttonTrackFont)
@@ -1761,6 +1763,16 @@ Partial Class OptionsForm
         Me.gadgetFormButton.Text = "Open Gadget Window"
         Me.gadgetFormButton.UseVisualStyleBackColor = True
         '
+        'checkMinimizeToIconTray
+        '
+        Me.checkMinimizeToIconTray.AutoSize = True
+        Me.checkMinimizeToIconTray.Location = New System.Drawing.Point(113, 79)
+        Me.checkMinimizeToIconTray.Name = "checkMinimizeToIconTray"
+        Me.checkMinimizeToIconTray.Size = New System.Drawing.Size(115, 17)
+        Me.checkMinimizeToIconTray.TabIndex = 27
+        Me.checkMinimizeToIconTray.Text = "Minimize to icon try"
+        Me.checkMinimizeToIconTray.UseVisualStyleBackColor = True
+        '
         'OptionsForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -1981,4 +1993,5 @@ Partial Class OptionsForm
     Friend WithEvents checkRemoveTrackFromList As CheckBox
     Friend WithEvents logPathReloadPic As PictureBox
     Friend WithEvents logPathKeyPic As PictureBox
+    Friend WithEvents checkMinimizeToIconTray As CheckBox
 End Class

@@ -49,6 +49,12 @@ Module ClickGadget
         End If
     End Sub
 
+    Public Sub performAutoClick()
+        For i = 1 To autoClickerRep
+            Utils.lMouseClick()
+        Next
+    End Sub
+
     Sub flushClickCounter()
         Dim totcurr As Long = cll + clr + clm
         saveRawSetting(SettingsIdentifier.CLICK_COUNTER, CLICKS_BUTTON_LEFT, CLng(loadRawSetting(SettingsIdentifier.CLICK_COUNTER, CLICKS_BUTTON_LEFT)) + cll)

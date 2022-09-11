@@ -157,7 +157,7 @@ Public Class LyricsForm
 1:          If state = lyricState.MODIFIED Then
                 If writeLyricsStream() Then
                     setState(lyricState.READ)
-                    FormUtils.setLyricsImage()
+                    Form1.setLyricsImage()
                 Else
                     If MsgBox("Failed to write to file. Try again?", MsgBoxStyle.YesNo + MsgBoxStyle.Critical, "Lyrics Manager") = MsgBoxResult.Yes Then
                         GoTo 1

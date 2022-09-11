@@ -357,9 +357,7 @@ Public Class Form1
 
 
     Private Sub clicker_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles clickerTimer.Tick
-        For i = 1 To autoClickerRep
-            Utils.lMouseClick()
-        Next
+        ClickGadget.performAutoClick()
     End Sub
 
     Private Sub clickcountt_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles clickcountt.Tick
@@ -450,6 +448,64 @@ Public Class Form1
     End Function
 #End Region
 
+
+#Region "Form1"
+    Public Sub setLockImage()
+        If formLocked Then
+            menuLock.Image = IIf(darkTheme, My.Resources.unlock_inv, My.Resources.unlock)
+            menuLock.ToolTipText = "Unlock Hotkeys"
+        Else
+            menuLock.Image = IIf(darkTheme, My.Resources.lock_inv, My.Resources.lock)
+            menuLock.ToolTipText = "Lock Hotkeys"
+        End If
+    End Sub
+    Public Sub setRemoteImage()
+        If remoteTcp.isEstablished Then
+            menuRemote.Image = IIf(darkTheme, My.Resources.online_inv, My.Resources.online)
+            menuRemote.ToolTipText = "Status: Connected"
+        Else
+            If remoteTcp.isListenerActive Then
+                menuRemote.Image = IIf(darkTheme, My.Resources.offline_inv, My.Resources.offline)
+                menuRemote.ToolTipText = "Status: Ready"
+            Else
+                menuRemote.Image = IIf(darkTheme, My.Resources.blocked_inv, My.Resources.blocked)
+                menuRemote.ToolTipText = "Status: Blocked"
+            End If
+
+        End If
+    End Sub
+    Public Sub setLyricsImage()
+        Dim l As ListBox = getSelectedList()
+        If radioEnabled Or l Is Nothing OrElse l.SelectedIndex = -1 OrElse TypeOf l.SelectedItem IsNot Track Then
+            menuLyrics.Image = IIf(darkTheme, My.Resources.cross_inv, My.Resources.cross)
+        Else
+            Dim track As Track = l.SelectedItem
+            If LyricsForm.hasLyrics(track) Then
+                menuLyrics.Image = IIf(darkTheme, My.Resources.tick_inv, My.Resources.tick)
+            Else
+                menuLyrics.Image = IIf(darkTheme, My.Resources.cross_inv, My.Resources.cross)
+            End If
+        End If
+    End Sub
+    Public Sub setSettingsImage()
+        menuSettings.Image = IIf(darkTheme, My.Resources.settings_inv, My.Resources.settings)
+    End Sub
+
+    Public Sub setGadgetsImage()
+        menuGadgets.Image = IIf(darkTheme, My.Resources.gadgets_inv, My.Resources.gadgets)
+    End Sub
+
+    Public Sub setMenuIcons()
+        setLockImage()
+        setRemoteImage()
+        setSettingsImage()
+        setLyricsImage()
+        setGadgetsImage()
+    End Sub
+#End Region
+
+
+
 #Region "Local Source/Playlist"
     Private Sub ImportPlaylistToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MenuSourceExternalMedia.Click
         If Not radioEnabled Then
@@ -500,14 +556,12 @@ Public Class Form1
     Sub lockFormSwitch()
         setSetting(SettingsIdentifier.FORM_LOCKED, Not getSetting(SettingsIdentifier.FORM_LOCKED))
         FormUtils.colorForm(Me)
-        FormUtils.setLockImage()
+        setLockImage()
         If formLocked Then
             keyt.Stop()
             HotkeyService.lockChange = True
         Else
-            keyt.Start()
-            keydelayt.Interval = delayMs
-            keydelayt.Start()
+            HotkeyService.startHotkeyDelay()
         End If
     End Sub
 
@@ -580,20 +634,6 @@ Public Class Form1
         GadgetsForm.Show()
     End Sub
 
-    Function diminishArray(ByRef str() As String, ByVal value As String) As String()
-        If IsNothing(str) Then
-            Return str
-        Else
-            Dim res() As String = Nothing
-            For Each s As String In str
-                If Not s = value Then
-                    dll.ExtendArray(res, s)
-                End If
-            Next
-            str = res
-            Return str
-        End If
-    End Function
 #End Region
 
 #Region "Sort"
@@ -690,8 +730,6 @@ Public Class Form1
         Cursor = Cursors.Default
     End Sub
 
-    Private Sub AbcToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles menuSortByName.Click
-    End Sub
     Private Sub sortToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles menuSortByName.Click, menuSortByDateAdded.Click, menuSortByTimeListened.Click, menuSortByCount.Click, menuSortByLength.Click, menuSortByPopularity.Click
         If searchState = SearchState.NONE Then
             If sender.Equals(menuSortByName) Then : setSetting(SettingsIdentifier.TRACK_SORT, sortMode.NAME + trackSort Mod 2)
@@ -1147,7 +1185,7 @@ Public Class Form1
         Else
             'clear stats labels?
         End If
-        FormUtils.setLyricsImage()
+        setLyricsImage()
         If Not l2.SelectedIndex = -1 And sender.Equals(l2) And dragList Is Nothing Then l2_2.SelectedIndex = -1
     End Sub
 
@@ -2318,17 +2356,13 @@ Public Class Form1
         labelLength2.Left = labelGenre2.Left - 4 'length
         labelLength.Left = labelLength2.Right
 
-        ' wmp.Location = New Point(0, 50)
-        '  wmp.Size = New Size(Me.Width - 15, Me.Height - 80)
-        '   wmp.BringToFront()
         If Me.WindowState = FormWindowState.Minimized Then
-            'If Not showMinimizedInTaskbar Then
-            iconTray.Visible = True
-            Me.Hide()
-            ' End If
+            If getSetting(SettingsIdentifier.WIN_MINIMIZE_TO_ICON_TRAY) Then
+                iconTray.Visible = True
+                Me.Hide()
+            End If
         Else
             iconTray.Visible = False
-            '   If firstLoad Then resizeUpdate()
         End If
     End Sub
     Private Sub Form1_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Resize
@@ -2895,14 +2929,14 @@ Public Class Form1
     Sub TcpStartListener(ByVal port As Integer, Optional ByVal errorMsg As Boolean = True)
         If remoteTcp.startListener(port) Then
             OptionsForm.labelPort.Text = remoteTcp.port
-            FormUtils.setRemoteImage()
+            setRemoteImage()
             OptionsForm.setListenerStatus()
 
             TcpListen()
         Else
             OptionsForm.labelPort.Text = port
             remoteTcp.port = port
-            FormUtils.setRemoteImage()
+            setRemoteImage()
             remoteTcp.stopListener()
             OptionsForm.setListenerStatus()
             If errorMsg Then MsgBox("Port is not open", MsgBoxStyle.Exclamation)
@@ -2945,7 +2979,7 @@ Public Class Form1
             If showErr Then MsgBox(reason & ": client close failed")
         End If
         OptionsForm.refreshRemoteUI()
-        FormUtils.setRemoteImage()
+        setRemoteImage()
     End Sub
 
     Async Sub TcpListen()
@@ -2959,7 +2993,7 @@ Public Class Form1
                         remoteTcp.stopConnection(remoteTcp.getIp(res.client))
                     Else
                         If remoteTcp.establishConnection(res.client).resultCode = 2 Then
-                            FormUtils.setRemoteImage()
+                            setRemoteImage()
                             OptionsForm.refreshRemoteUI()
 
                         End If
@@ -2968,7 +3002,7 @@ Public Class Form1
                     remoteTcp.stopConnection(remoteTcp.getIp(res.client))
                 End If
             ElseIf res.resultCode = 2 Then
-                FormUtils.setRemoteImage()
+                setRemoteImage()
                 OptionsForm.refreshRemoteUI()
             ElseIf res.resultCode = 3 Then
                 Exit Do
@@ -3548,12 +3582,6 @@ Public Class Form1
     Declare Function FindWindow Lib "user32.dll" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As IntPtr 'Int32
     Declare Function SendMessageHM Lib "user32.dll" Alias "SendMessageA" (ByVal hWnd As IntPtr, ByVal wMsg As Int32, ByVal wParam As Int32, ByVal lParam As StringBuilder) As Int32
 
-
-    Private Sub Button1_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
-
-        SendMessageHM(Handle, &H401, 0, New StringBuilder("arc"))
-    End Sub
-
     Protected Overrides Sub WndProc(ByRef m As Message)
         If m.Msg = &H4A Then 'H400 user
             Dim cds As COPYDATASTRUCT = Marshal.PtrToStructure(m.LParam, GetType(COPYDATASTRUCT))
@@ -3748,65 +3776,6 @@ Public Class Form1
 
 #End Region
 
-    'Private Sub Button1_Click_3(sender As Object, e As EventArgs)
-    '    Dim l As ListBox = getSelectedList()
-    '    If Not radio AndAlso l IsNot Nothing AndAlso l.SelectedIndex > -1 AndAlso TypeOf l.SelectedItem Is Track Then
-    '        Dim track As Track = Track.getFirstTrack("DefQon 1 - 2009") 'l.SelectedItem
-    '        openOverlay(eOverlayMode.PARTS)
-    '        PartsForm.loadParts(track)
-    '    End If
-    '    Return
-    '    Dim s As String = ""
-    '    For i = 0 To l2.Items.Count - 1
-    '        Dim track As Track = l2.Items(i)
-    '        s &= track.name & vbNewLine
-    '        track.updateParts()
-    '        If track.partsCount > 1 Then
-    '            For Each p As TrackPart In track.parts
-    '                If p.name = "" Then
-    '                    s &= " →ID - ID" & vbNewLine
-    '                Else
-    '                    s &= " →" & p.name & vbNewLine
-    '                End If
-
-    '            Next
-    '        End If
-    '    Next
-    '    Dim sw As New StreamWriter("C:\users\marvin\desktop\hardcore.txt")
-    '    sw.Write(s)
-    '    sw.Close()
-    '    Return
-    '    For i = 0 To l2.Items.Count - 1
-    '        Dim track As Track = l2.Items(i)
-    '        track.updateGenre()
-    '        Dim fols As List(Of Folder) = track.genre.folders
-    '        For Each f As Folder In fols
-
-    '            Dim currFol As Folder = Folder.getFolder(Folder.top.fullPath & f.name)
-    '            If currFol IsNot Nothing Then
-    '                If Not currFol.containsTrack(track) Then
-    '                    MsgBox(currFol.name & vbNewLine & track.name)
-    '                End If
-    '            End If
-
-    '        Next
-    '    Next
-    '    Return
-    '    Dim fol As Folder = Folder.getSelectedFolder(tv)
-    '    showOptions(OptionsForm.optionState.PLAYLISTS, False, "Manage " & fol.name, IIf(fol.isVirtual, {fol.nodePath}, {"folders", fol.nodePath}))
-    '    Return
-
-    'End Sub
-
-
-
-    Private Sub menuStrip_ItemClicked(sender As Object, e As ToolStripItemClickedEventArgs) Handles menuStrip.ItemClicked
-
-    End Sub
-
-    Private Sub con2AddToPlaylist_Click(sender As Object, e As EventArgs) Handles con2AddToPlaylist.Click
-
-    End Sub
 
     Private Sub iconTray_MouseDoubleClick(sender As Object, e As MouseEventArgs) Handles iconTray.MouseDoubleClick
         Me.Show()
@@ -3814,58 +3783,7 @@ Public Class Form1
         Me.WindowState = FormWindowState.Normal
     End Sub
 
-    Private Sub Button1_Click_1(sender As Object, e As EventArgs) Handles Button1.Click
-        IniService.iniGetAllValues("kk")
-    End Sub
 
-
-
-
-
-
-
-    'Private Async Sub Button1_Click_1(sender As Object, e As EventArgs) Handles Button1.Click
-    '    Dim conf = SpotifyClientConfig.CreateDefault()
-    '    Dim req = New ClientCredentialsRequest("dbf3700dbc0e45d8919ab0b5caa3d283", "a832a46ed505425ebf67e094b98e0722")
-    '    Dim res = Await New OAuthClient(conf).RequestToken(req)
-    '    Dim sp As New SpotifyClient(conf.WithToken(res.AccessToken))
-    '    Dim track = Await sp.Tracks.Get("1UymZaSfQII4vUkz4U5btm")
-    '    MsgBox(track.Name)
-    '    Dim auth = New TokenAuthenticator(res.AccessToken, "Bearer")
-    '    Dim authCred = New CredentialsAuthenticator("dbf3700dbc0e45d8919ab0b5caa3d283", "a832a46ed505425ebf67e094b98e0722")
-    '    Dim conn = New SpotifyAPI.Web.Http.APIConnector(New Uri("https://api.spotify.com"), authCred)
-    '    Dim pl = New PlayerClient(conn)
-    '    Dim b = Await pl.GetAvailableDevices()
-    'End Sub
-
-
-    'Private Sub Button3_Click_2(sender As Object, e As EventArgs)
-
-    '    indicateSortMode()
-    '    Return
-    '    Dim alls As New List(Of Track)
-    '    For Each g As String In genres
-    '        Dim f As Folder = Folder.getFolder("C:\users\marvin\music\" & g & "\")
-    '        Dim ts As List(Of Track) = f.tracks
-    '        For Each t As Track In ts
-    '            If alls.Contains(t) Then
-    '                MsgBox("alls " & t.name)
-    '            End If
-    '            alls.Add(t)
-    '            For Each g2 As String In genres
-    '                If g2 <> g Then
-    '                    If IO.File.Exists("C:\users\marvin\music\" & g2 & "\" & t.name & t.ext) Then
-    '                        MsgBox("other genre Not " & t.fullPath)
-    '                    End If
-    '                    If Not IO.File.Exists("C:\users\marvin\music\everything\" & t.name & t.ext) Then
-    '                        MsgBox("everything not " & t.fullPath)
-    '                    End If
-    '                End If
-    '            Next
-
-    '        Next
-    '    Next
-    'End Sub
 
 End Class
 

@@ -262,6 +262,7 @@ Public Class OptionsForm
                 checkRandomNextTrack.Checked = randomNextTrack
                 checkPlaylistHistory.Checked = getSetting(SettingsIdentifier.PLAYLIST_SAVE_HISTORY)
                 checkRemoveTrackFromList.Checked = removeNextTrack
+                checkMinimizeToIconTray.Checked = getSetting(SettingsIdentifier.WIN_MINIMIZE_TO_ICON_TRAY)
 
                 Form1.saveWinPos()
                 Form1.saveWinSize()
@@ -276,7 +277,7 @@ Public Class OptionsForm
         Select Case state
             Case optionState.KEYSET
                 If waitingInput Then switchKeyInputState()
-                saveSetting(SettingsIdentifier.DELAY_MS, numDelay.Value)
+                saveSetting(SettingsIdentifier.HOTKEY_DELAY_MS, numDelay.Value)
                 Form1.keydelayt.Interval = numDelay.Value
 
             Case optionState.GENRES
@@ -932,7 +933,7 @@ Public Class OptionsForm
     Private Sub stopButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles stopButton.Click
         If Not remoteTcp.stopListener() Then MsgBox("Failure")
         setListenerStatus()
-        FormUtils.setRemoteImage()
+        Form1.setRemoteImage()
     End Sub
 
     Private Sub resetButton2_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles resetButton2.Click
@@ -1570,7 +1571,9 @@ Public Class OptionsForm
         FormUtils.colorForm(Form1)
         FormUtils.colorForm(Me)
     End Sub
-
+    Private Sub checkMinimizeToIconTray_Click(sender As Object, e As EventArgs) Handles checkMinimizeToIconTray.Click
+        saveSetting(SettingsIdentifier.WIN_MINIMIZE_TO_ICON_TRAY, sender.checked)
+    End Sub
     Private Sub checkSavePos_Click(sender As Object, e As EventArgs) Handles checkSavePos.Click
         saveSetting(SettingsIdentifier.SAVE_WIN_POS_SIZE, sender.checked)
     End Sub

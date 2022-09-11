@@ -69,9 +69,9 @@ Public Module SettingsService
         End Get
     End Property
 
-    Public ReadOnly Property delayMs As Integer
+    Public ReadOnly Property hotkeyDelayMs As Integer
         Get
-            Return getSetting(SettingsIdentifier.DELAY_MS)
+            Return getSetting(SettingsIdentifier.HOTKEY_DELAY_MS)
         End Get
     End Property
     Public ReadOnly Property autoClicker As Boolean
@@ -253,6 +253,8 @@ Public Module SettingsService
         settings.Add(SettingsIdentifier.WIN_POS, New IniSetting(Of String)(CONFIG_SECTION, "winPos", "0;0"))
         settings.Add(SettingsIdentifier.WIN_SIZE, New IniSetting(Of String)(CONFIG_SECTION, "winPos", "0;0"))
         settings.Add(SettingsIdentifier.WIN_MAX, New IniSetting(Of Boolean)(CONFIG_SECTION, "winMax", Boolean.FalseString))
+        settings.Add(SettingsIdentifier.WIN_MINIMIZE_TO_ICON_TRAY, New IniSetting(Of Boolean)(CONFIG_SECTION, "winMinimizeToIconTry", Boolean.FalseString))
+
         settings.Add(SettingsIdentifier.BALANCE, New IniSetting(Of Integer)(CONFIG_SECTION, "balance", 0))
         settings.Add(SettingsIdentifier.PLAY_RATE, New IniSetting(Of Double)(CONFIG_SECTION, "playRate", 1.0))
 
@@ -278,7 +280,7 @@ Public Module SettingsService
 
 
 
-        settings.Add(SettingsIdentifier.DELAY_MS, New IniSetting(Of Integer)(CONFIG_SECTION, "delay", 250, AddressOf FollowupAction.delayTimer))
+        settings.Add(SettingsIdentifier.HOTKEY_DELAY_MS, New IniSetting(Of Integer)(CONFIG_SECTION, "delay", 250, AddressOf FollowupAction.delayTimer))
 
         settings.Add(SettingsIdentifier.FTP_IP, New IniSetting(Of String)(CONFIG_SECTION, "ftpIp", "127.0.0.1"))
         settings.Add(SettingsIdentifier.FTP_USER, New IniSetting(Of String)(CONFIG_SECTION, "ftpUser", "updateplayer"))

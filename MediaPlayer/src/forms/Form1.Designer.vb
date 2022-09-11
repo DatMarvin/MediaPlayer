@@ -121,7 +121,6 @@ Partial Class Form1
         Me.keyloggerTimer = New System.Windows.Forms.Timer(Me.components)
         Me.iconTray = New System.Windows.Forms.NotifyIcon(Me.components)
         Me.wmp = New AxWMPLib.AxWindowsMediaPlayer()
-        Me.Button1 = New System.Windows.Forms.Button()
         Me.con1.SuspendLayout()
         Me.con2.SuspendLayout()
         Me.menuStrip.SuspendLayout()
@@ -865,22 +864,12 @@ Partial Class Form1
         Me.wmp.TabIndex = 0
         Me.wmp.TabStop = False
         '
-        'Button1
-        '
-        Me.Button1.Location = New System.Drawing.Point(382, 0)
-        Me.Button1.Name = "Button1"
-        Me.Button1.Size = New System.Drawing.Size(75, 23)
-        Me.Button1.TabIndex = 82
-        Me.Button1.Text = "Button1"
-        Me.Button1.UseVisualStyleBackColor = True
-        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.BackColor = System.Drawing.SystemColors.Control
         Me.ClientSize = New System.Drawing.Size(892, 538)
-        Me.Controls.Add(Me.Button1)
         Me.Controls.Add(Me.cancelLabel)
         Me.Controls.Add(Me.picCancel)
         Me.Controls.Add(Me.checkSeachAllFolders)
@@ -1050,5 +1039,4 @@ Partial Class Form1
     Friend WithEvents RemoveFromPlaylistToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents con2TracksTasksRemove As ToolStripMenuItem
     Friend WithEvents iconTray As NotifyIcon
-    Friend WithEvents Button1 As Button
 End Class
