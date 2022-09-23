@@ -312,7 +312,7 @@ Public Class OptionsForm
                     saveRawSetting(SettingsIdentifier.RADIO_STATIONS, listStations.Items(i).name, listStations.Items(i).url)
                 Next
                 If radioEnabled Then
-                    Form1.changeSourceMode(1)
+                    PlayerInterface.changeSourceMode(musicSource.RADIO)
                 End If
 
             Case optionState.UPDATE
@@ -1586,11 +1586,11 @@ Public Class OptionsForm
     End Sub
 
     Private Sub trackbarBalance_Scroll(sender As Object, e As EventArgs) Handles trackbarBalance.Scroll
-        Form1.setBalance(trackbarBalance.Value)
+        PlayerInterface.setBalance(trackbarBalance.Value)
     End Sub
 
     Private Sub trackbarPlayRate_Scroll(sender As Object, e As EventArgs) Handles trackbarPlayRate.Scroll
-        Form1.setPlayRate(numToScale(trackbarPlayRate.Value))
+        PlayerInterface.updatePlayRate(numToScale(trackbarPlayRate.Value))
     End Sub
 
     Function numToScale(n As Integer) As Double
@@ -1626,7 +1626,7 @@ Public Class OptionsForm
     End Function
 
     Private Sub buttonProperties_Click(sender As Object, e As EventArgs) Handles buttonProperties.Click
-        Form1.wmp.ShowPropertyPages()
+        Player.showPropertyPages()
     End Sub
     Private Sub checkRandomNextTrack_Click(sender As Object, e As EventArgs) Handles checkRandomNextTrack.Click
         saveSetting(SettingsIdentifier.RANDOM_NEXT_TRACK, sender.checked)

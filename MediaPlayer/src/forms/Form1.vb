@@ -20,38 +20,19 @@ Public Class Form1
     ReadOnly rnd As New Random
 
 
-
-    Public currTrack As Track
-    Public last As Track
-    Public trackLoop As LoopMode
-    Public loopVals(2) As Double
-    Public gldt As New List(Of String)
-    Public glnames As New List(Of String)
-
-    ReadOnly Property currTrackPart As TrackPart
-        Get
-            Return currTrack.currPart
-        End Get
-    End Property
-
     Dim dItem As Track
     Dim dragList As ListBox
 
-    Dim firstPlayStart As FirstStartState
 
-    Public root As String
+    Public root As String 'TODO needed?
 
-    Public playlist As New List(Of Track)
-
-    Public lastOptionsState As OptionsForm.optionState
-
-
-    Dim currLyrTrack As Track
-    Public overlayMode As eOverlayMode
 
     Public searchState As SearchState
 
-    '   Public savePlaylistHistory As Boolean
+
+    Public overlayMode As eOverlayMode
+    Public lastOptionsState As OptionsForm.optionState
+
 
     Public lastGadgetsState As GadgetsForm.GadgetState
 
@@ -66,7 +47,7 @@ Public Class Form1
 #Region "Form1"
 
     Private Sub Form1_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
-        SettingsService.saveSetting(SettingsIdentifier.VOLUME, wmp.settings.volume)
+        SettingsService.saveSetting(SettingsIdentifier.VOLUME, Player.getVolume())
         SettingsService.saveSetting(SettingsIdentifier.PLAY_MODE, playMode)
         SettingsService.saveSetting(SettingsIdentifier.MUSIC_SOURCE, CInt(radioEnabled))
         SettingsService.saveSetting(SettingsIdentifier.WIN_MAX, WindowState = FormWindowState.Maximized)
@@ -75,7 +56,7 @@ Public Class Form1
             KeyloggerModule.keyloggerDestroy()
         End If
 
-        If l2.SelectedIndex > -1 And tv.SelectedNode IsNot Nothing And Not radioEnabled And Not last = Nothing Then
+        If l2.SelectedIndex > -1 And tv.SelectedNode IsNot Nothing And Not radioEnabled And Not PlayerInterface.last = Nothing Then
             saveLastTrack()
         End If
 
@@ -96,14 +77,13 @@ Public Class Form1
 
         VersionUpdateService.checkForVersionUpdate()
 
-
-
         SettingsService.initSystemSettings()
 
         Folder.setTopFolder(getSetting(SettingsIdentifier.PATH))
         Folder.invalidateFolders(Folder.top)
         Track.invalidateTracks(True)
 
+        PlayerInterface.initPlayer(Me)
         SettingsService.initPlayerSettings()
 
 
@@ -111,10 +91,6 @@ Public Class Form1
 
         FileSystemWatcher.fswInit()
 
-
-        currTrack = Nothing
-        wmp.settings.balance = balance
-        wmp.settings.rate = playRate
 
         loadWinPosSize()
         FormUtils.colorForm(Me)
@@ -131,7 +107,7 @@ Public Class Form1
         If My.Application.CommandLineArgs.Count = 0 Then
 
             If radioEnabled Then
-                changeSourceMode(1)
+                PlayerInterface.changeSourceMode(MusicSource.RADIO)
             Else
                 localfill()
             End If
@@ -151,15 +127,15 @@ Public Class Form1
                         addTrack.addToPlaylist()
                     Next
                 End If
-                Dim prioTrack As Track = IIf(currTrack = Nothing, last, currTrack)
+                Dim prioTrack As Track = IIf(PlayerInterface.currTrack = Nothing, PlayerInterface.last, PlayerInterface.currTrack)
                 If Not prioTrack = Nothing Then
                     prioTrack.selectPlaylist()
                 End If
                 IniService.iniDeleteSection(IniSection.HISTORY)
             End If
-            If Not last = Nothing Then
+            If Not PlayerInterface.last = Nothing Then
                 Dim l As ListBox = getSelectedList()
-                If l.SelectedItem IsNot Nothing AndAlso l.SelectedItem.name = last.name Then
+                If l.SelectedItem IsNot Nothing AndAlso l.SelectedItem.name = PlayerInterface.last.name Then
                     If SettingsService.loadSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME) > 0.0 Then
                         SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_APPLY_TIME, SettingsService.getSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME))
                         SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME, 0.0)
@@ -201,7 +177,7 @@ Public Class Form1
                 For Each t As Track In argTracks
                     t.addToPlaylist()
                 Next
-                playlist(0).play()
+                PlayerInterface.playlist(0).play()
             Else
                 setSetting(SettingsIdentifier.MUSIC_SOURCE, MusicSource.LOCAL)
                 localfill()
@@ -258,11 +234,9 @@ Public Class Form1
 
 #Region "Timer"
 
-
     Private Sub keys_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles keyt.Tick
         HotkeyService.keyPressHandler()
     End Sub
-
 
 
     Sub macroKeyPressHandler()
@@ -285,36 +259,25 @@ Public Class Form1
                     End If
                 End If
             Next
-
-            '#########Screenshot Legacy 19.06.2020
-            'If My.Computer.Clipboard.ContainsImage Then
-            '    Dim img As Drawing.Image = My.Computer.Clipboard.GetImage()
-            '    img.Save(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) & "\sc.png")
-            '    Process.Start("mspaint", Environment.GetFolderPath(Environment.SpecialFolder.Desktop) & "\sc.png")
-            '    HotkeyService.startHotkeyDelay()
-            'End If
         End If
     End Sub
-
-
-
 
     Private Sub keydelayt_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles keydelayt.Tick
         HotkeyService.stopHotkeyDelayTimer()
     End Sub
 
     Private Sub iniValT_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles iniValT.Tick
-        If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
+        If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
             If Not radioEnabled Then
-                If currTrack IsNot Nothing Then currTrack.currPart = currTrack.getCurrentPart(wmp.Ctlcontrols.currentPosition)
-                If Not last = Nothing Then saveLastTrack()
+                If PlayerInterface.currTrack IsNot Nothing Then PlayerInterface.currTrack.currPart = PlayerInterface.currTrack.getCurrentPart(Player.getCurrentPosition())
+                If Not PlayerInterface.last = Nothing Then saveLastTrack()
 
-                If Not currTrack = Nothing Then
-                    SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME, wmp.Ctlcontrols.currentPosition)
-                    If wmp.currentMedia IsNot Nothing Then
+                If Not PlayerInterface.currTrack = Nothing Then
+                    SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME, Player.getCurrentPosition())
+                    If Player.getCurrentMedia() IsNot Nothing Then
                         Try
-                            If wmp.currentMedia.duration > 0 Then
-                                saveRawSetting(SettingsIdentifier.TRACKS_TIME, currTrack.name, wmp.currentMedia.duration)
+                            If Player.getCurrentMedia().duration > 0 Then
+                                saveRawSetting(SettingsIdentifier.TRACKS_TIME, PlayerInterface.currTrack.name, Player.getCurrentMedia().duration)
                             End If
                             labelStatsUpdate()
                         Catch ex As Exception
@@ -324,7 +287,7 @@ Public Class Form1
                     End If
                 End If
             End If
-            SettingsService.saveSetting(SettingsIdentifier.VOLUME, wmp.settings.volume)
+            SettingsService.saveSetting(SettingsIdentifier.VOLUME, Player.getVolume())
             SettingsService.saveSetting(SettingsIdentifier.PLAY_MODE, playMode)
         End If
     End Sub
@@ -340,14 +303,14 @@ Public Class Form1
 
         ClickGadget.clickGadgetHandler()
 
-        playStateHandler()
+        PlayerInterface.playStateHandler()
 
     End Sub
 
     Private Sub radiotimer_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles radiotimer.Tick
-        If radioEnabled AndAlso wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-            If Not wmp.playState = WMPLib.WMPPlayState.wmppsTransitioning Then
-                If l2.SelectedItem IsNot Nothing Then l2.SelectedItem.timetemp = wmp.Ctlcontrols.currentPosition
+        If radioEnabled AndAlso Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
+            If Not Player.getPlayState() = WMPLib.WMPPlayState.wmppsTransitioning Then
+                If l2.SelectedItem IsNot Nothing Then l2.SelectedItem.timetemp = Player.getCurrentPosition()
             End If
         End If
     End Sub
@@ -526,10 +489,10 @@ Public Class Form1
                         If n = 0 Then
                             MsgBox("No Audio files found", MsgBoxStyle.Exclamation)
                         Else
-                            If Not currTrack = Nothing Then
-                                currTrack.play()
+                            If Not PlayerInterface.currTrack = Nothing Then
+                                PlayerInterface.currTrack.play()
                             Else
-                                playlist(0).play()
+                                PlayerInterface.playlist(0).play()
                             End If
                         End If
 
@@ -543,7 +506,7 @@ Public Class Form1
         MenuSourceLocalRadio.Text = IIf(radioEnabled, "Local", "Radio")
     End Sub
     Private Sub RadioToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MenuSourceLocalRadio.Click
-        switchSourceMode()
+        PlayerInterface.switchSourceMode()
     End Sub
 #End Region
 
@@ -571,31 +534,6 @@ Public Class Form1
         If Not optionsMode Then lockFormSwitch()
     End Sub
 
-    Public Sub setPlayRate()
-        setPlayRate(playRate)
-    End Sub
-
-    Public Sub setPlayRate(val As Double)
-        Try
-            wmp.settings.rate = val
-        Catch ex As Exception
-            val = 1.0
-        End Try
-        '  playRate = val
-        If optionsMode Then OptionsForm.labelPlayRate.Text = "Play Rate: " & val
-        saveSetting(SettingsIdentifier.PLAY_RATE, val)
-    End Sub
-
-    Public Sub setBalance(val As Integer)
-        Try
-            wmp.settings.balance = val
-        Catch ex As Exception
-            val = 0
-        End Try
-        ' balance = val
-        If optionsMode Then OptionsForm.labelBalance.Text = "Balance: " & val
-        saveSetting(SettingsIdentifier.BALANCE, val)
-    End Sub
 
 
 
@@ -769,8 +707,8 @@ Public Class Form1
         Dim sel As Track = l2.SelectedItem
         If Not radioEnabled Then
             If l2_2.SelectedIndex = -1 Then
-                If Not last = Nothing AndAlso listContains(l2, last) >= 0 Then
-                    l2.SelectedIndex = listContains(l2, last)
+                If Not PlayerInterface.last = Nothing AndAlso listContains(l2, PlayerInterface.last) >= 0 Then
+                    l2.SelectedIndex = listContains(l2, PlayerInterface.last)
                 Else
                     l2.SelectedIndex = rnd.Next(0, l2.Items.Count)
                 End If
@@ -795,7 +733,7 @@ Public Class Form1
         If l Is Nothing Then l = getSelectedList()
         If searchState = SearchState.NONE Then
             l.SelectedIndex = -1
-            Dim prioTrack As Track = IIf(currTrack = Nothing, last, currTrack)
+            Dim prioTrack As Track = IIf(PlayerInterface.currTrack = Nothing, PlayerInterface.last, PlayerInterface.currTrack)
             If Not prioTrack = Nothing Then
                 prioTrack.selectPlaylist()
             Else
@@ -971,7 +909,7 @@ Public Class Form1
                 dragDropNextField.BringToFront()
                 dragDropQueueField.BringToFront()
 
-                If last IsNot Nothing Then saveLastTrack()
+                If PlayerInterface.last IsNot Nothing Then saveLastTrack()
                 If dragList.DoDragDrop(dItem, DragDropEffects.Move Or DragDropEffects.Copy) = DragDropEffects.Move Then
                     If dragList Is l2 Then
                         dragList.Items.Remove(dItem)
@@ -1039,7 +977,7 @@ Public Class Form1
             Dim tarPath As String = root & tv.SelectedNode.FullPath & "\" & dItem.name & dItem.ext
             If File.Exists(tarPath) Then
                 If MsgBox("Overwrite?" & vbNewLine & vbNewLine & dItem.name & vbNewLine & "-> " & tv.SelectedNode.FullPath, MsgBoxStyle.YesNo + MsgBoxStyle.Information) = MsgBoxResult.Yes Then
-                    If wmp.URL = dItem.fullPath Then wmp.URL = ""
+                    If Player.getUrl() = dItem.fullPath Then Player.resetUrl()
                     File.Delete(tarPath)
                     If e.Effect = DragDropEffects.Move Then : IO.File.Move(dItem.fullPath, tarPath) : Else : IO.File.Copy(dItem.fullPath, tarPath) : End If
                 End If
@@ -1114,8 +1052,8 @@ Public Class Form1
                 If curr IsNot Nothing Then curr.invalidateFolderTracks(False, True)
                 l2.Items.Clear()
                 refill()
-                If Not currTrack = Nothing Then
-                    currTrack.selectPlaylist()
+                If Not PlayerInterface.currTrack = Nothing Then
+                    PlayerInterface.currTrack.selectPlaylist()
                 Else
                     If l2_2.SelectedIndex = -1 Then setlistselected()
                 End If
@@ -1196,9 +1134,9 @@ Public Class Form1
                         Dim part As TrackPart = l2.SelectedItem
                         part.track.addToPlaylist()
                         part.track.play()
-                        trackLoop = LoopMode.YES
-                        loopVals(1) = part.fromSec
-                        loopVals(2) = part.toSec
+                        PlayerInterface.trackLoop = LoopMode.YES
+                        PlayerInterface.loopVals(1) = part.fromSec
+                        PlayerInterface.loopVals(2) = part.toSec
                     End If
                 Else
                     l2.SelectedItem.addToPlaylist()
@@ -1206,7 +1144,7 @@ Public Class Form1
                 End If
             Else
                 saveRadioTime()
-                wmpstart(l2.SelectedItem)
+                PlayerInterface.launchRadio(l2.SelectedItem)
             End If
         End If
     End Sub
@@ -1225,7 +1163,7 @@ Public Class Form1
 
     Private Sub l2_2_DoubleClick(ByVal sender As Object, ByVal e As System.EventArgs) Handles l2_2.DoubleClick
         If Not l2.SelectedIndex = -1 Then
-            last = l2.SelectedItem
+            PlayerInterface.last = l2.SelectedItem
             l2.SelectedIndex = -1
         End If
         If l2_2.SelectedItem IsNot Nothing Then l2_2.SelectedItem.play()
@@ -1315,8 +1253,8 @@ Public Class Form1
                 If sortAfter Then sortListAuto()
                 If l2_2.SelectedIndex = -1 Then setlistselected()
 
-                If Not l2.SelectedIndex = -1 And Not wmp.playState = WMPLib.WMPPlayState.wmppsPlaying And last = Nothing Then
-                    last = l2.SelectedItem
+                If Not l2.SelectedIndex = -1 And Not Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying And PlayerInterface.last = Nothing Then
+                    PlayerInterface.last = l2.SelectedItem
                 End If
             End If
         End If
@@ -1352,10 +1290,10 @@ Public Class Form1
 
         tv.EndUpdate()
 
-        last = Track.getTrack(SettingsService.loadSetting(SettingsIdentifier.LAST_TRACK_FILE))
+        PlayerInterface.last = Track.getTrack(SettingsService.loadSetting(SettingsIdentifier.LAST_TRACK_FILE))
 
         If tv.Nodes(0).Nodes.Count > 0 Then
-            Dim prioTrack As Track = IIf(currTrack = Nothing, last, currTrack)
+            Dim prioTrack As Track = IIf(PlayerInterface.currTrack = Nothing, PlayerInterface.last, PlayerInterface.currTrack)
             If Not prioTrack = Nothing And selNodeString Is Nothing Then
                 Dim conNode() As TreeNode = tv.Nodes.Find(prioTrack.dir, True)
                 If conNode.Length > 0 Then
@@ -1382,7 +1320,7 @@ Public Class Form1
 
         If Not radioEnabled Then
             If l2.Items.Count > 0 Then
-                Dim prioTrack As Track = IIf(currTrack = Nothing, last, currTrack)
+                Dim prioTrack As Track = IIf(PlayerInterface.currTrack = Nothing, PlayerInterface.last, PlayerInterface.currTrack)
                 If Not prioTrack = Nothing Then
                     prioTrack.selectPlaylist()
                 End If
@@ -1399,7 +1337,7 @@ Public Class Form1
         Dim beforeIndex As Integer = l2.SelectedIndex
         l2.Items.Clear()
         l2.Sorted = False
-        Dim rads As List(Of Radio) = MediaPlayer.Radio.getStations()
+        Dim rads As List(Of Radio) = Radio.getStations()
         If radioSort = 1 Then rads.Sort(Function(x, y) y.time.CompareTo(x.time))
         l2.Items.AddRange(rads.ToArray)
         Dim wasRadioBefore As Boolean = radioEnabled And beforeIndex >= 0
@@ -1446,7 +1384,7 @@ Public Class Form1
     Private Sub AddToQueueToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles con1QueueAllTracks.Click
         If Not IsNothing(tv.SelectedNode) Then
             For Each t As Track In sortTracks(Folder.getSelectedFolder(tv).tracks, trackSort)
-                If currTrack Is Nothing OrElse Not t.name.ToLower = currTrack.name.ToLower Then t.addToPlaylist()
+                If PlayerInterface.currTrack Is Nothing OrElse Not t.name.ToLower = PlayerInterface.currTrack.name.ToLower Then t.addToPlaylist()
             Next
         End If
     End Sub
@@ -1462,26 +1400,6 @@ Public Class Form1
 
 #Region "Stats"
 
-
-    Sub extendArray(ByRef folders() As Folder, Optional ByVal value As Folder = Nothing)
-        If IsNothing(folders) Then
-            ReDim folders(0)
-            folders(0) = value
-        Else
-            ReDim Preserve folders(folders.Length)
-            folders(folders.Length - 1) = value
-        End If
-    End Sub
-
-    Sub extendArray(ByRef nodes() As TreeNode, Optional ByVal value As TreeNode = Nothing)
-        If IsNothing(nodes) Then
-            ReDim nodes(0)
-            nodes(0) = value
-        Else
-            ReDim Preserve nodes(nodes.Length)
-            nodes(nodes.Length - 1) = value
-        End If
-    End Sub
 
     Private Sub GenreDistributionToolStripMenuItem_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles con2ListTasksGenreDistributionToolStripMenuItem.Click
         Dim l As ListBox = getSelectedList()
@@ -1541,9 +1459,9 @@ Public Class Form1
                             Else
                                 l.SelectedIndex = l.Items.Count + 1 - 2
                             End If
-                            If currTrack IsNot Nothing AndAlso selTrack.name.ToLower = currTrack.name.ToLower Then
-                                wmp.URL = ""
-                                wmp.Ctlcontrols.pause()
+                            If PlayerInterface.currTrack IsNot Nothing AndAlso selTrack.name.ToLower = PlayerInterface.currTrack.name.ToLower Then
+                                Player.resetUrl()
+                                Player.pause()
                             End If
 
                         End If
@@ -1664,19 +1582,17 @@ Public Class Form1
                 If searchState > SearchState.NONE Then cancelSearch(False)
 
                 l.Items.Clear()
-                If Not last = Nothing Then
-                    If listContains(ol, last) >= 0 Then
-                        ol.SelectedIndex = listContains(ol, last)
+                If Not PlayerInterface.last = Nothing Then
+                    If listContains(ol, PlayerInterface.last) >= 0 Then
+                        ol.SelectedIndex = listContains(ol, PlayerInterface.last)
                     Else
                         If ol.Items.Count > 0 Then
                             ol.SelectedIndex = rnd.Next(0, ol.Items.Count)
                         End If
                     End If
                 End If
-
-
             Else
-                clearPlaylist()
+                PlayerInterface.clearPlaylist()
             End If
         End If
     End Sub
@@ -1708,8 +1624,8 @@ Public Class Form1
                     track.virtualDelete()
                 Else
                     If IO.File.Exists(track.fullPath) Then
-                        If wmp.URL = track.fullPath Then
-                            wmp.URL = ""
+                        If Player.getUrl() = track.fullPath Then
+                            Player.resetUrl()
                         End If
                         Try
                             If MsgBox("Are you sure to delete the file permanently?", MsgBoxStyle.YesNo + MsgBoxStyle.Exclamation) = MsgBoxResult.Yes Then
@@ -1762,8 +1678,8 @@ Public Class Form1
                                 End If
 
                             End If
-                            If wmp.URL.ToLower = CStr(locPath & str.name & str.ext).ToLower And (wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Or wmp.playState = WMPLib.WMPPlayState.wmppsPaused) Then
-                                wmpstartURL(root & locs(i).nodePath & newName & str.ext)
+                            If Player.getUrl().ToLower = CStr(locPath & str.name & str.ext).ToLower And (Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Or Player.getPlayState() = WMPLib.WMPPlayState.wmppsPaused) Then
+                                PlayerInterface.launchURL(root & locs(i).nodePath & newName & str.ext)
                             End If
                         End If
                     Next
@@ -1835,10 +1751,10 @@ Public Class Form1
             Dim l As ListBox = getSelectedList()
             If Not TypeOf l.SelectedItem Is Track Then Return
             Dim selTrack As Track = l.SelectedItem
-            If Not currTrack = Nothing Then
-                currTrack.selectPlaylist()
+            If Not PlayerInterface.currTrack = Nothing Then
+                PlayerInterface.currTrack.selectPlaylist()
             Else
-                playlist(0).selectPlaylist()
+                PlayerInterface.playlist(0).selectPlaylist()
             End If
             selTrack.addToPlaylist()
             If l Is l2 Then
@@ -1927,7 +1843,7 @@ Public Class Form1
 
         searchStateUIUpdate()
 
-        If currTrack = Nothing AndAlso l2.SelectedIndex = -1 AndAlso l2_2.SelectedIndex = -1 And dragList Is Nothing Then
+        If PlayerInterface.currTrack = Nothing AndAlso l2.SelectedIndex = -1 AndAlso l2_2.SelectedIndex = -1 And dragList Is Nothing Then
             If Track.playlist IsNot Nothing Then
                 If Track.playlist.Count > 0 Then
                     Track.playlist(0).selectPlaylist()
@@ -1937,7 +1853,7 @@ Public Class Form1
     End Sub
 
     Sub labelUIUpdate()
-        labelVolume.Text = wmp.settings.volume
+        labelVolume.Text = Player.getVolume()
         labelL2Count.Text = l2.Items.Count
         labelL2Count.Location = New Point(l2.Right - 19 - labelL2Count.Width, l2.Bottom - labelL2Count.Height - 2)
         labelL2_2Count.Location = New Point(l2_2.Right - 19 - labelL2_2Count.Width, l2_2.Bottom - labelL2_2Count.Height - 2)
@@ -1955,30 +1871,30 @@ Public Class Form1
                 labelLength.Text = ""
                 labelPopularity.Text = ""
                 labelGenre.Text = ""
-                If Not radioEnabled And Not wmp.URL = "" Then setlistselected()
+                If Not radioEnabled And Not Player.isUrlEmpty() Then setlistselected()
             End If
         End If
     End Sub
 
 
     Sub windowTextUpdate()
-        If Not radioEnabled And Not currTrack Is Nothing Then
-            Dim t As String = currTrack.name
-            If currTrack.partsCount > 1 Then
-                If currTrackPart IsNot Nothing Then
-                    Dim pString As String = currTrackPart.name
-                    t &= " | " & IIf(pString = "", "", pString & " | ") & currTrackPart.id + 1 & "(" & currTrack.partsCount & ")"
+        If Not radioEnabled And Not PlayerInterface.currTrack Is Nothing Then
+            Dim t As String = PlayerInterface.currTrack.name
+            If PlayerInterface.currTrack.partsCount > 1 Then
+                If PlayerInterface.currTrackPart IsNot Nothing Then
+                    Dim pString As String = PlayerInterface.currTrackPart.name
+                    t &= " | " & IIf(pString = "", "", pString & " | ") & PlayerInterface.currTrackPart.id + 1 & "(" & PlayerInterface.currTrack.partsCount & ")"
                 End If
             End If
-            If wmp.playState = WMPPlayState.wmppsPlaying Then
+            If Player.getPlayState() = WMPPlayState.wmppsPlaying Then
                 t = "♫ " & t '23.02.18 →
-            ElseIf wmp.playState = WMPPlayState.wmppsPaused Or wmp.playState = WMPPlayState.wmppsStopped Then
+            ElseIf Player.getPlayState() = WMPPlayState.wmppsPaused Or Player.getPlayState() = WMPPlayState.wmppsStopped Then
                 t = "■ ⁯⁯⁯⁯⁯⁯" & t
             End If
             Me.Text = t
         ElseIf radioEnabled Then
-            If l2.SelectedItem IsNot Nothing Then Me.Text = IIf(wmp.playState = WMPPlayState.wmppsPlaying, "♫ ", "■ ") & l2.SelectedItem.name
-        ElseIf wmp.URL = "" Then
+            If l2.SelectedItem IsNot Nothing Then Me.Text = IIf(Player.getPlayState() = WMPPlayState.wmppsPlaying, "♫ ", "■ ") & l2.SelectedItem.name
+        ElseIf Player.isUrlEmpty() Then
             Text = ""
         End If
     End Sub
@@ -2083,30 +1999,30 @@ Public Class Form1
     Sub labelPartsLoopUpdate()
         Dim selList As ListBox = getSelectedList()
         If selList IsNot Nothing And Not selList.SelectedItem Is Nothing And Not radioEnabled And selList.Items.Count > 0 And searchState = SearchState.NONE And dragList Is Nothing Then
-            If Not currTrack = Nothing AndAlso currTrack.name = selList.SelectedItem.name Then
-                If currTrack.partsCount = 0 Then
-                    currTrack.updateParts()
+            If Not PlayerInterface.currTrack = Nothing AndAlso PlayerInterface.currTrack.name = selList.SelectedItem.name Then
+                If PlayerInterface.currTrack.partsCount = 0 Then
+                    PlayerInterface.currTrack.updateParts()
                 End If
-1:              If currTrack.partsCount > 0 AndAlso currTrackPart IsNot Nothing Then labelPartsCount.Text = currTrackPart.id + 1 & " (" & currTrack.partsCount & ")"
+1:              If PlayerInterface.currTrack.partsCount > 0 AndAlso PlayerInterface.currTrackPart IsNot Nothing Then labelPartsCount.Text = PlayerInterface.currTrackPart.id + 1 & " (" & PlayerInterface.currTrack.partsCount & ")"
                 Try
-                    If currTrack.partsCount > 0 Then labelPartName.Text = currTrackPart.name
-                    If trackLoop = LoopMode.NO Then
-                        If currTrack.partsCount > 0 Then
-                            labelLoop.Text = currTrackPart.format
+                    If PlayerInterface.currTrack.partsCount > 0 Then labelPartName.Text = PlayerInterface.currTrackPart.name
+                    If PlayerInterface.trackLoop = LoopMode.NO Then
+                        If PlayerInterface.currTrack.partsCount > 0 Then
+                            labelLoop.Text = PlayerInterface.currTrackPart.format
                         Else
                             labelLoop.Text = ""
                         End If
-                    ElseIf trackLoop = LoopMode.INTERMEDIATE Then
-                        labelLoop.Text = "[" & dll.secondsTo_ms_Format(Int(loopVals(1))) & " -"
+                    ElseIf PlayerInterface.trackLoop = LoopMode.INTERMEDIATE Then
+                        labelLoop.Text = "[" & dll.secondsTo_ms_Format(Int(PlayerInterface.loopVals(1))) & " -"
                     Else
-                        labelLoop.Text = "[" & dll.secondsTo_ms_Format(Int(loopVals(1))) & " - " & dll.secondsTo_ms_Format(Int(loopVals(2))) & "]"
+                        labelLoop.Text = "[" & dll.secondsTo_ms_Format(Int(PlayerInterface.loopVals(1))) & " - " & dll.secondsTo_ms_Format(Int(PlayerInterface.loopVals(2))) & "]"
                     End If
                 Catch ex As Exception
                     labelLoop.Text = "error"
                 End Try
             ElseIf selList.SelectedItem.partsCount > 0 Then
-                If currTrack <> Nothing And selList.SelectedItem IsNot Nothing Then
-                    If currTrack.name = selList.SelectedItem.name Then
+                If PlayerInterface.currTrack <> Nothing And selList.SelectedItem IsNot Nothing Then
+                    If PlayerInterface.currTrack.name = selList.SelectedItem.name Then
                         GoTo 1
                     End If
                 End If
@@ -2162,7 +2078,7 @@ Public Class Form1
         Dim flag As Boolean = False
         If l2.Equals(getSelectedList) Then
 1:          For i = 0 To l2.Items.Count - 1
-                If l2.Items(i).name = last.name Then
+                If l2.Items(i).name = PlayerInterface.last.name Then
                     l2_2.SelectedIndex = -1
                     l2.SelectedIndex = -1
                     l2.SelectedIndex = i
@@ -2175,7 +2091,7 @@ Public Class Form1
             End If
         ElseIf l2_2.Equals(getSelectedList) Then
 2:          For i = 0 To l2_2.Items.Count - 1
-                If l2_2.Items(i).name = last.name Then
+                If l2_2.Items(i).name = PlayerInterface.last.name Then
                     l2.SelectedIndex = -1
                     l2_2.SelectedIndex = -1
                     l2_2.SelectedIndex = i
@@ -2235,30 +2151,30 @@ Public Class Form1
 
     Private Sub Label25_A_B(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelLoop.Click
         Dim val As String = ""
-        If trackLoop = LoopMode.INTERMEDIATE Then
-            val = InputBox("From:", , dll.secondsTo_ms_Format(Int(loopVals(1))))
+        If PlayerInterface.trackLoop = LoopMode.INTERMEDIATE Then
+            val = InputBox("From:", , dll.secondsTo_ms_Format(Int(PlayerInterface.loopVals(1))))
             If val = "" Then
-                resetLoop()
-            Else : loopVals(1) = dll.minFormatToSec(val)
+                PlayerInterface.resetLoop()
+            Else : PlayerInterface.loopVals(1) = dll.minFormatToSec(val)
             End If
-        ElseIf trackLoop = LoopMode.YES Then
-            val = InputBox("From:", , dll.secondsTo_ms_Format(Int(loopVals(1))))
+        ElseIf PlayerInterface.trackLoop = LoopMode.YES Then
+            val = InputBox("From:", , dll.secondsTo_ms_Format(Int(PlayerInterface.loopVals(1))))
             If val = "" Then
-                resetLoop() : Exit Sub
-            Else : loopVals(1) = dll.minFormatToSec(val)
+                PlayerInterface.resetLoop() : Exit Sub
+            Else : PlayerInterface.loopVals(1) = dll.minFormatToSec(val)
             End If
-            val = InputBox("To:", , dll.secondsTo_ms_Format(Int(loopVals(2))))
+            val = InputBox("To:", , dll.secondsTo_ms_Format(Int(PlayerInterface.loopVals(2))))
             If val = "" Then
-                resetLoop()
-            Else : loopVals(2) = dll.minFormatToSec(val)
+                PlayerInterface.resetLoop()
+            Else : PlayerInterface.loopVals(2) = dll.minFormatToSec(val)
             End If
         End If
     End Sub
 
     Public Sub setLoop(fromTime As Integer, toTime As Integer)
-        loopVals(1) = fromTime
-        loopVals(2) = toTime
-        trackLoop = LoopMode.YES
+        PlayerInterface.loopVals(1) = fromTime
+        PlayerInterface.loopVals(2) = toTime
+        PlayerInterface.trackLoop = LoopMode.YES
     End Sub
 
     Private Sub Label16_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles labelPartName.Click
@@ -2297,7 +2213,6 @@ Public Class Form1
     'search label update
 #Region "Resizing"
     Sub formResize()
-
         Dim l1rat As Double = 234 / minWidth   '224
         Dim l2rat As Double = 394 / minWidth  '380
         Dim l2_2rat As Double = 280 / minWidth '270
@@ -2314,7 +2229,16 @@ Public Class Form1
         tv.Height = l2.Height - wmp.Height - 1
         l2_2.Height = l2.Height
         wmp.Top = l2.Bottom - wmp.Height
-        labelPrevTrack.Location = New Point(wmp.Left + 7, wmp.Bottom - 44) : picRepeat.Location = New Point(wmp.Left + 34, wmp.Bottom - 29) : picRandom.Location = New Point(wmp.Left + 75, wmp.Bottom - 31) : labelNextTrack.Location = New Point(wmp.Right - 28, wmp.Bottom - 44) : labelVolume.Location = New Point(wmp.Left + 200, wmp.Bottom - 13) : labelPrevTrack.BringToFront() : picRepeat.BringToFront() : picRandom.BringToFront() : labelNextTrack.BringToFront() : labelVolume.BringToFront()
+        labelPrevTrack.Location = New Point(wmp.Left + 7, wmp.Bottom - 44)
+        picRepeat.Location = New Point(wmp.Left + 34, wmp.Bottom - 29)
+        picRandom.Location = New Point(wmp.Left + 75, wmp.Bottom - 31)
+        labelNextTrack.Location = New Point(wmp.Right - 28, wmp.Bottom - 44)
+        labelVolume.Location = New Point(wmp.Left + 200, wmp.Bottom - 13)
+        labelPrevTrack.BringToFront()
+        picRepeat.BringToFront()
+        picRandom.BringToFront()
+        labelNextTrack.BringToFront()
+        labelVolume.BringToFront()
 
         labelL2Count.Top = l2.Bottom - labelL2Count.Height - 2 'l2count
         labelL2_2Count.Top = l2_2.Bottom - labelL2_2Count.Height - 2 'l2_2count
@@ -2358,218 +2282,6 @@ Public Class Form1
 
 #End Region
 
-#Region "wmp functions"
-
-    Public Sub wmpstart(ByVal track As Track)
-        If Not radioEnabled And Not track = Nothing Then
-            If File.Exists(track.fullPath) Then
-                setPlayRate()
-                wmp.URL = track.fullPath
-                last = track
-                track.updateParts()
-                firstStart()
-            End If
-            resetLoop()
-        End If
-    End Sub
-    Public Sub wmpstart(ByVal rad As Radio)
-        If radioEnabled And searchState = SearchState.NONE And rad IsNot Nothing Then
-            wmp.URL = rad.url
-            firstStart()
-        End If
-    End Sub
-    Private Sub wmpstartURL(ByVal url As String)
-        If searchState = SearchState.NONE Then
-            resetLoop()
-            setPlayRate()
-            wmp.URL = url
-            firstStart()
-        End If
-    End Sub
-
-    Sub firstStart()
-        If firstPlayStart = FirstStartState.INIT Then
-            firstPlayStart = FirstStartState.STARTING
-            If SettingsService.loadSetting(SettingsIdentifier.FTP_AUTO_UPDATE) Then
-                dll.checkPlayerUpdate(dll.ftpCred, True)
-            End If
-        End If
-    End Sub
-
-    Public Sub switchSourceMode()
-        If radioEnabled Then
-            changeSourceMode(MusicSource.LOCAL)
-        Else
-            changeSourceMode(MusicSource.RADIO)
-        End If
-    End Sub
-    Public Sub changeSourceMode(ByVal mode As MusicSource)
-        If Not searchState = SearchState.NONE Then cancelSearch(False)
-        If mode = 0 Then
-            tv.Enabled = True
-            l2_2.Enabled = True
-            tSearch.Enabled = True
-            menuSortBy.Enabled = True
-            menuLyrics.Enabled = True
-            menuStatistics.Enabled = True
-            If radioEnabled Then
-                saveRadioTime()
-                setSetting(SettingsIdentifier.MUSIC_SOURCE, MusicSource.LOCAL)
-                l2.Items.Clear()
-                localfill(False)
-                sortListAuto()
-                setlistselected()
-                wmp.settings.mute = False
-                wmp.Ctlcontrols.pause()
-            Else
-
-                If l2.SelectedIndex > -1 Then
-                    wmpstart(l2.SelectedItem)
-                    Dim tr As Track = l2.SelectedItem
-                    tr.play()
-                ElseIf l2_2.SelectedIndex > -1 Then
-                    wmpstart(l2_2.SelectedItem)
-                ElseIf Not currTrack = Nothing Then
-                    wmpstart(currTrack)
-                End If
-            End If
-        Else
-            If radioEnabled Then
-                saveRadioTime()
-            End If
-            resetLoop()
-            tv.Nodes.Clear()
-            radfill()
-            clearPlaylist()
-            tv.Enabled = False
-            l2_2.Enabled = False
-            tSearch.Enabled = False
-            menuSortBy.Enabled = False
-            menuLyrics.Enabled = False
-            menuStatistics.Enabled = False
-            If l2.Items.Count > 0 And wmp.playState = WMPPlayState.wmppsPlaying Then
-                wmpstart(l2.SelectedItem)
-            End If
-        End If
-        saveSetting(SettingsIdentifier.MUSIC_SOURCE, mode)
-        HotkeyService.startHotkeyDelay()
-
-    End Sub
-#End Region
-
-#Region "Track Parts"
-    Sub switchpart(ByVal switchdir As Integer) 'dir 2-forward,1-back
-        If Not radioEnabled Then
-            currTrack.currPart = currTrack.getCurrentPart()
-            If currTrackPart IsNot Nothing Then
-                If switchdir = 1 Then
-                    If trackLoop = LoopMode.YES Then
-                        currTrack.prevPart()
-                    End If
-                Else
-                    currTrack.nextPart()
-                End If
-                loopVals(1) = currTrackPart.fromSec
-                loopVals(2) = currTrackPart.toSec
-                trackLoop = LoopMode.YES
-                wmp.Ctlcontrols.currentPosition = loopVals(1)
-                labelStatsUpdate()
-                labelLoop.Cursor = Cursors.Hand
-            End If
-        End If
-    End Sub
-    Function ParseMinuteSecondString(ByVal s As String) As String()
-        If s Is Nothing Then Return Nothing
-        Return s.Split(",")
-    End Function
-
-
-    Sub resetLoop()
-        trackLoop = LoopMode.NO
-        loopVals(1) = 0
-        loopVals(2) = 0
-        labelLoop.Cursor = Cursors.Default
-    End Sub
-
-#End Region
-
-#Region "Playlist"
-    Public Sub selectPlaylist(ByVal index As Integer)
-        If playlist.Count > index Then
-            l2_2.SelectedIndex = index
-        End If
-    End Sub
-
-    Public Function playlistContains(ByVal track As Track) As Integer
-        If playlist.Contains(track) Then
-            Return playlist.IndexOf(track)
-        Else
-            For i = 0 To playlist.Count - 1
-                If playlist(i).name = track.name Then
-                    Return i
-                End If
-            Next
-        End If
-        Return -1
-    End Function
-
-    Function getNextRandomTrack() As Track
-        Dim tracks As New List(Of Track)
-        For Each item In l2.Items
-            If TypeOf item Is Track Then
-                tracks.Add(item)
-            End If
-        Next
-        If tracks.Count = 0 Then Return Nothing
-        Return tracks(rnd.Next(0, tracks.Count))
-    End Function
-
-    Public Sub playNextTrack()
-        If currTrack Is Nothing Or currTrack IsNot Nothing AndAlso currTrack.getPlaylistIndex() = playlist.Count - 1 Then
-            If l2.Items.Count = 0 Then refill(Not playMode = PlayMode.REPEAT)
-            If l2.Items.Count > 0 Then
-
-                Dim nextTrack As Track
-                If randomNextTrack Then
-                    nextTrack = getNextRandomTrack()
-                Else
-                    sortListAuto()
-                    nextTrack = l2.Items(0)
-                End If
-
-                If nextTrack = Nothing Then
-                    playlist(0).play()
-                Else
-                    If removeNextTrack Then
-                        l2.Items.Remove(nextTrack)
-                    End If
-                    nextTrack.addToPlaylist()
-                    nextTrack.selectPlaylist()
-
-                    If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Or wmp.playState = WMPPlayState.wmppsUndefined Or wmp.playState = WMPPlayState.wmppsStopped Then nextTrack.play()
-                End If
-            Else
-                playlist(0).play()
-            End If
-        Else
-            playlist(currTrack.getPlaylistIndex() + 1).play()
-        End If
-    End Sub
-
-    Public Sub playPrevTrack()
-        If currTrack = Nothing Then
-            If l2_2.SelectedIndex > 0 Then l2_2.SelectedIndex -= 1
-        Else
-            If currTrack.getPlaylistIndex() > 0 Then playlist(currTrack.getPlaylistIndex() - 1).play()
-        End If
-    End Sub
-
-    Sub clearPlaylist()
-        For i = playlist.Count - 1 To 0 Step -1
-            playlist(i).removeFromPlaylist()
-        Next
-    End Sub
-#End Region
 
 #Region "Search"
 
@@ -2643,8 +2355,8 @@ Public Class Form1
             End If
 
             If Not l2.SelectedIndex = -1 Then
-                If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    last = l2.SelectedItem
+                If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
+                    PlayerInterface.last = l2.SelectedItem
                 End If
             End If
         End If
@@ -2806,11 +2518,11 @@ Public Class Form1
     End Sub
 
     Public Sub saveLastTrack(Optional val As String = "")
-        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_FILE, IIf(val = "", last.virtualPath, val))
+        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_FILE, IIf(val = "", PlayerInterface.last.virtualPath, val))
     End Sub
 
     Public Sub saveCurrPlaylistHistory()
-        For Each t As Track In playlist
+        For Each t As Track In PlayerInterface.playlist
             SettingsService.saveRawSetting(SettingsIdentifier.PLAYLIST_HISTORY, t.name, t.fullPath)
         Next
     End Sub
@@ -2828,8 +2540,8 @@ Public Class Form1
                 End If
             End If
         Else
-1:          gldt.Clear()
-            glnames.Clear()
+1:          PlayerInterface.gldt.Clear()
+            PlayerInterface.glnames.Clear()
             Dim encData As String = ""
             Dim decr As String
             If readContent(logpath, encData) Then
@@ -2842,8 +2554,8 @@ Public Class Form1
                         If s.Contains("[Musik]") Then activeFlag = True
 
                         If s.Contains("=") And activeFlag Then
-                            gldt.Add(s.Substring(s.IndexOf("=") + 1, 10))
-                            glnames.Add(s.Substring(s.IndexOf("=") + 16))
+                            PlayerInterface.gldt.Add(s.Substring(s.IndexOf("=") + 1, 10))
+                            PlayerInterface.glnames.Add(s.Substring(s.IndexOf("=") + 16))
                         End If
                     Next
                     Return finishLoadDates(True)
@@ -2874,16 +2586,16 @@ Public Class Form1
     End Function
 
     Public Function getDate(ByVal track As String, Optional ByVal reloadDates As Boolean = True) As String
-        If reloadDates Or gldt.Count = 0 Or glnames.Count = 0 Then
+        If reloadDates Or PlayerInterface.gldt.Count = 0 Or PlayerInterface.glnames.Count = 0 Then
             If Not loaddates() Then
                 'loading dates failed
             End If
         End If
-        Dim res As String = glnames.IndexOf(track)
+        Dim res As String = PlayerInterface.glnames.IndexOf(track)
         If res = -1 Then
             Return ""
         Else
-            Return gldt(res)
+            Return PlayerInterface.gldt(res)
         End If
     End Function
 
@@ -2916,7 +2628,7 @@ Public Class Form1
             Dim comm As String = cds.lpData.Substring(0, 2)
             Dim data As String = cds.lpData.Substring(2)
             If comm = "ms" Then
-                If radioEnabled Then changeSourceMode(0)
+                If radioEnabled Then PlayerInterface.changeSourceMode(MusicSource.LOCAL)
                 initSearch()
                 HotkeyService.keyExecute(Key.keyName.Restore_Window)
                 tSearch.Text = data
@@ -2987,115 +2699,6 @@ Public Class Form1
             Dim track As Track = l.SelectedItem
             openOverlay(eOverlayMode.LYRICS)
             LyricsForm.openLyrics(track)
-        End If
-
-    End Sub
-
-    Sub playStateHandler()
-        'playstate handler
-        If wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-            If trackLoop = LoopMode.YES Then
-                If wmp.Ctlcontrols.currentPosition > loopVals(2) And wmp.Ctlcontrols.currentPosition < loopVals(1) Then
-                    wmp.Ctlcontrols.currentPosition = loopVals(1)
-                End If
-                If loopVals(1) < loopVals(2) Then
-                    If wmp.Ctlcontrols.currentPosition < loopVals(1) Then
-                        wmp.Ctlcontrols.currentPosition = loopVals(1)
-                    ElseIf wmp.Ctlcontrols.currentPosition > loopVals(2) Then
-                        wmp.Ctlcontrols.currentPosition = loopVals(1)
-                    End If
-                    If currTrack IsNot Nothing AndAlso loopVals(2) > currTrack.length AndAlso currTrack.length > 0 Then
-                        If Math.Abs(wmp.Ctlcontrols.currentPosition - currTrack.length) <= 0.25 Then
-                            wmp.Ctlcontrols.currentPosition = loopVals(1)
-                        End If
-                    End If
-                End If
-            End If
-
-            currTrack = Track.getTrack(wmp.URL)
-
-            If currTrack IsNot Nothing Then
-                currTrack.currPart = currTrack.getCurrentPart(wmp.Ctlcontrols.currentPosition)
-            End If
-
-            If firstPlayStart = FirstStartState.STARTING And Not radioEnabled Then
-                If Not last = Nothing Then
-                    Dim l As ListBox = getSelectedList()
-                    If l.SelectedItem = last Then
-                        Dim timeTemp As Double = SettingsService.loadSetting(SettingsIdentifier.LAST_TRACK_APPLY_TIME)
-
-                        If timeTemp > 2 * 60 Or timeTemp > l.SelectedItem.length / 2 Then
-                            wmp.Ctlcontrols.currentPosition = timeTemp
-                        End If
-                        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_APPLY_TIME, 0.0)
-                        SettingsService.saveSetting(SettingsIdentifier.LAST_TRACK_RECORDED_TIME, 0.0)
-                    End If
-                End If
-                firstPlayStart = FirstStartState.STARTED
-            End If
-
-        ElseIf wmp.playState = WMPPlayState.wmppsReady And Not radioEnabled Then
-            If Not wmp.URL = "" Then
-                wmp.URL = ""
-                Dim ind As Integer = getSelectedList().SelectedItem.removeFromPlayList()
-                If currTrack IsNot Nothing Then
-                    currTrack.selectPlaylist()
-                Else
-                    If playlist.Count > ind Then
-                        playlist(ind).selectPlaylist()
-                    End If
-                End If
-            Else
-                currTrack = Nothing
-            End If
-        ElseIf wmp.playState = WMPLib.WMPPlayState.wmppsStopped Then
-
-            resetLoop()
-            If radioEnabled Then
-                If l2.Items.Count > 0 Then
-                    saveRadioTime()
-                    wmpstart(l2.SelectedItem.name)
-                End If
-            ElseIf Not currTrack = Nothing Then 'e.g. local source
-
-                labelStatsUpdate()
-                If Not IsNothing(tv.SelectedNode) Then
-                    Dim c As Integer = currTrack.count
-                    If c > 0 Then
-                        currTrack.count += 1
-                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, currTrack.name, currTrack.count)
-                    Else
-                        saveRawSetting(SettingsIdentifier.TRACKS_COUNT, currTrack.name, loadRawSetting(SettingsIdentifier.TRACKS_COUNT, currTrack.name) + 1)
-                    End If
-                    currTrack.selectPlaylist()
-                    Select Case playMode
-                        Case PlayMode.STRAIGHT
-                            l2.SelectedIndex += 1
-                            wmpstart(l2.SelectedItem)
-                            last = l2.SelectedItem
-                        Case PlayMode.REPEAT
-                            labelStatsUpdate()
-                            currTrack.play()
-                        Case PlayMode.RANDOM
-                            playNextTrack()
-                        Case Else
-                    End Select
-                Else
-                    If playMode = PlayMode.REPEAT Then
-                        wmpstartURL(wmp.URL)
-                    ElseIf playMode = PlayMode.RANDOM Then
-                        playNextTrack()
-                    End If
-
-                End If
-            Else
-                If playMode = PlayMode.REPEAT Then
-                    wmpstartURL(wmp.URL)
-                ElseIf playMode = PlayMode.RANDOM Then
-                    playNextTrack()
-                End If
-
-            End If
         End If
 
     End Sub

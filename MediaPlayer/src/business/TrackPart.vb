@@ -40,7 +40,7 @@ Public Class TrackPart
         Me.track = track
         Me.id = id
         Try
-            Dim times() As Integer = minFormatsToSec(formHandle.ParseMinuteSecondString(data(0)))
+            Dim times() As Integer = minFormatsToSec(Utils.ParseMinuteSecondString(data(0)))
             Me.fromSec = times(0)
             Me.toSec = times(1)
         Catch ex As Exception

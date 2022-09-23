@@ -338,13 +338,13 @@ Public Class Folder
         Dim deleteFail As Boolean = False
         Try
             Form1.Cursor = Cursors.WaitCursor
-            If Form1.currTrack IsNot Nothing Then
-                If Form1.currTrack.fullPath.StartsWith(fullPath) Then Form1.wmp.URL = ""
+            If PlayerInterface.currTrack IsNot Nothing Then
+                If PlayerInterface.currTrack.fullPath.StartsWith(fullPath) Then Player.resetUrl()
             End If
             IO.Directory.Delete(fullPath, True)
-            For i = Form1.playlist.Count - 1 To 0 Step -1
-                If Not IO.File.Exists(Form1.playlist(i).fullPath) Then
-                    Form1.playlist(i).removeFromPlaylist()
+            For i = PlayerInterface.playlist.Count - 1 To 0 Step -1
+                If Not IO.File.Exists(PlayerInterface.playlist(i).fullPath) Then
+                    PlayerInterface.playlist(i).removeFromPlaylist()
                 End If
             Next
             Form1.Cursor = Cursors.Default

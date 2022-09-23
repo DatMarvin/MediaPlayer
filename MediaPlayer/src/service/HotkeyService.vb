@@ -57,32 +57,32 @@ Public Class HotkeyService
     Public Shared Sub keyExecute(ByVal k As Key)
         Select Case k.name
             Case Key.keyName.Play_Pause
-                If Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
+                If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
                     If radioEnabled Then
-                        Form1.wmp.settings.mute = Not Form1.wmp.settings.mute
+                        Player.setMute(Not Player.isMute())
                     Else
-                        Form1.wmp.Ctlcontrols.pause()
+                        Player.pause()
                     End If
-                ElseIf Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPaused Then
+                ElseIf Player.getPlayState() = WMPLib.WMPPlayState.wmppsPaused Then
                     If Not radioEnabled Then
-                        Form1.wmp.Ctlcontrols.play()
+                        Player.play()
                     Else
                         Form1.saveRadioTime()
                         Form1.tv.Enabled = False
                         Form1.l2_2.Enabled = False
-                        Form1.wmpstart(Form1.l2.SelectedItem)
+                        PlayerInterface.launchRadio(Form1.l2.SelectedItem)
                     End If
-                ElseIf Form1.wmp.playState = WMPLib.WMPPlayState.wmppsUndefined Then
+                ElseIf Player.getPlayState() = WMPLib.WMPPlayState.wmppsUndefined Then
                     If Not radioEnabled Then
                         If Form1.l2.SelectedIndex = -1 Then
                             Form1.setlistselected()
-                            Form1.playlist(Form1.l2_2.SelectedIndex).play()
+                            PlayerInterface.playlist(Form1.l2_2.SelectedIndex).play()
                         Else
                             Form1.l2.SelectedItem.play()
                         End If
                     Else
                         Form1.saveRadioTime()
-                        Form1.wmpstart(Form1.l2.SelectedItem)
+                        PlayerInterface.launchRadio(Form1.l2.SelectedItem)
                     End If
                 Else
 
@@ -91,88 +91,89 @@ Public Class HotkeyService
 
             Case Key.keyName.Next_Track
 2:              If Not radioEnabled Then
-                    Form1.playNextTrack()
+                    PlayerInterface.playNextTrack()
                     startHotkeyDelay()
                 Else
                     If Not Form1.l2.SelectedIndex = Form1.l2.Items.Count - 1 Then
                         Form1.saveRadioTime()
                         Form1.l2.SelectedIndex += 1
-                        Form1.wmpstart(Form1.l2.SelectedItem)
+                        PlayerInterface.launchRadio(Form1.l2.SelectedItem)
                         startHotkeyDelay()
                     End If
                 End If
                 Exit Sub
             Case Key.keyName.Previous_Track
 3:              If Not radioEnabled Then
-                    Form1.playPrevTrack()
+                    PlayerInterface.playPrevTrack()
                     startHotkeyDelay()
                 Else
                     If Not Form1.l2.SelectedIndex = 0 Then
                         Form1.saveRadioTime()
                         Form1.l2.SelectedIndex -= 1
-                        Form1.wmpstart(Form1.l2.SelectedItem)
+                        PlayerInterface.launchRadio(Form1.l2.SelectedItem)
                         startHotkeyDelay()
                     End If
                 End If
             Case Key.keyName.Volume_Mute
-                Form1.wmp.settings.mute = Not Form1.wmp.settings.mute
+                Player.setMute(Not Player.isMute())
                 startHotkeyDelay()
             Case Key.keyName.Volume_Min
-                Form1.wmp.settings.volume = 1
+                Player.setVolume(1)
                 startHotkeyDelay(100)
             Case Key.keyName.Volume_Half
-                Form1.wmp.settings.volume = 50
-                startHotkeyDelay()
+                Player.setVolume(1)
+                startHotkeyDelay(50)
             Case Key.keyName.Volume_Max
-                Form1.wmp.settings.volume = 100
+                Player.setVolume(100)
                 startHotkeyDelay(100)
             Case Key.keyName.Volume_Down
-                If Form1.wmp.settings.volume > 0 Then
-                    If Form1.wmp.settings.volume < 51 Then
-                        Form1.wmp.settings.volume -= Int(Form1.wmp.settings.volume / 5) + 1
-                    ElseIf Form1.wmp.settings.volume < 76 Then
-                        Form1.wmp.settings.volume = 50
+                If Player.getVolume() > 0 Then
+                    If Player.getVolume() < 51 Then
+                        Player.decreaseVolume(Int(Player.getVolume() / 5) + 1)
+                    ElseIf Player.getVolume() < 76 Then
+                        Player.setVolume(50)
                     Else
-                        Form1.wmp.settings.volume = 75
+                        Player.setVolume(75)
                     End If
                     startHotkeyDelay(50)
                 End If
             Case Key.keyName.Volume_Up
-                If Form1.wmp.settings.volume < 100 Then
-                    If Form1.wmp.settings.volume < 50 Then
-                        Form1.wmp.settings.volume += Int(Form1.wmp.settings.volume / 5) + 1
-                    ElseIf Form1.wmp.settings.volume < 75 Then
-                        Form1.wmp.settings.volume = 75
+                If Player.getVolume() < 100 Then
+                    If Player.getVolume() < 50 Then
+                        Player.increaseVolume(Int(Player.getVolume() / 5) + 1)
+                    ElseIf Player.getVolume() < 75 Then
+                        Player.setVolume(75)
                     Else
-                        Form1.wmp.settings.volume = 100
+                        Player.setVolume(100)
+
                     End If
                     startHotkeyDelay(50)
                 End If
             Case Key.keyName.Fast_Forward
-                If Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
+                If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
                     Try
-                        Form1.wmp.Ctlcontrols.currentPosition += 5
+                        Player.increaseCurrentPosition(5)
                     Catch ex As Exception
                     End Try
                 End If
             Case Key.keyName.Slow_Forward
-                If Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
+                If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
                     Try
-                        Form1.wmp.Ctlcontrols.currentPosition += 1
+                        Player.increaseCurrentPosition(1)
                     Catch ex As Exception
                     End Try
                 End If
             Case Key.keyName.Fast_Rewind
-                If Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
+                If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
                     Try
-                        Form1.wmp.Ctlcontrols.currentPosition -= 5
+                        Player.decreaseCurrentPosition(5)
                     Catch ex As Exception
                     End Try
                 End If
             Case Key.keyName.Slow_Rewind
-                If Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
+                If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
                     Try
-                        Form1.wmp.Ctlcontrols.currentPosition -= 1
+                        Player.decreaseCurrentPosition(1)
                     Catch ex As Exception
                     End Try
                 End If
@@ -181,9 +182,9 @@ Public Class HotkeyService
             Case Key.keyName.Random_Mode
                 Form1.changePlayMode(PlayMode.RANDOM)
             Case Key.keyName.Source_Local
-                Form1.changeSourceMode(0)
+                PlayerInterface.changeSourceMode(MusicSource.LOCAL)
             Case Key.keyName.Source_Radio
-                Form1.changeSourceMode(1)
+                PlayerInterface.changeSourceMode(MusicSource.RADIO)
             Case Key.keyName.Tree_Up
                 If Not radioEnabled Then
                     If Not IsNothing(Form1.tv.SelectedNode.PrevNode) Or Not IsNothing(Form1.tv.SelectedNode.Parent) Then
@@ -211,7 +212,7 @@ Public Class HotkeyService
             Case Key.keyName.Track_ToQueue
                 'File.Copy(l2_2.SelectedItem.fullpath, "C:\users\marvin\music\Chillen\" & l2_2.SelectedItem.name & ".mp3")
                 'l2_2.SelectedIndex += 1
-                'wmpstart(l2_2.Items(l2_2.SelectedIndex))
+                'launchTrack(l2_2.Items(l2_2.SelectedIndex))
                 'startHotkeyDelay()
                 'Exit Sub
                 Form1.TrackToQueue()
@@ -236,21 +237,21 @@ Public Class HotkeyService
                 End If
             Case Key.keyName.Track_Loop
                 If Not radioEnabled Then
-                    If Form1.wmp.Ctlcontrols.currentPosition >= 0 Then
-                        If Form1.trackLoop = LoopMode.NO Then
-                            Form1.trackLoop = LoopMode.INTERMEDIATE
+                    If Player.getCurrentPosition() >= 0 Then
+                        If PlayerInterface.trackLoop = LoopMode.NO Then
+                            PlayerInterface.trackLoop = LoopMode.INTERMEDIATE
                             Form1.labelLoop.Cursor = Cursors.Hand
-                            Form1.loopVals(1) = Form1.wmp.Ctlcontrols.currentPosition
+                            PlayerInterface.loopVals(1) = Player.getCurrentPosition()
                             Form1.labelStatsUpdate()
                             startHotkeyDelay(200)
-                        ElseIf Form1.trackLoop = LoopMode.INTERMEDIATE Then
-                            Form1.trackLoop = LoopMode.YES
+                        ElseIf PlayerInterface.trackLoop = LoopMode.INTERMEDIATE Then
+                            PlayerInterface.trackLoop = LoopMode.YES
                             Form1.labelLoop.Cursor = Cursors.Hand
-                            Form1.loopVals(2) = Form1.wmp.Ctlcontrols.currentPosition
+                            PlayerInterface.loopVals(2) = Player.getCurrentPosition()
                             startHotkeyDelay()
                             startHotkeyDelay(150)
-                        ElseIf Form1.trackLoop = LoopMode.YES Then
-                            Form1.resetLoop()
+                        ElseIf PlayerInterface.trackLoop = LoopMode.YES Then
+                            PlayerInterface.resetLoop()
                             startHotkeyDelay(100)
                         End If
                     End If
@@ -265,10 +266,10 @@ Public Class HotkeyService
                     startHotkeyDelay()
                 End If
             Case Key.keyName.Next_Part
-                Form1.switchpart(2)
+                PlayerInterface.switchpart(2)
                 startHotkeyDelay()
             Case Key.keyName.Previous_Part
-                Form1.switchpart(1)
+                PlayerInterface.switchpart(1)
                 startHotkeyDelay()
             Case Key.keyName.Count_Sub
                 Dim l As ListBox = Form1.getSelectedList()

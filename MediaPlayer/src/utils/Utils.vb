@@ -11,6 +11,7 @@ Imports System.ComponentModel
 Imports System.Reflection
 
 Public Class Utils
+    Private Shared rnd As New Random()
     Public Declare Sub mouse_event Lib "user32" Alias "mouse_event" (ByVal dwFlags As Integer, ByVal dx As Integer, ByVal dy As Integer, ByVal cButtons As Integer, ByVal dwExtraInfo As Integer)
 
     Public Declare Function getForegroundWindow Lib "user32" Alias "GetForegroundWindow" () As IntPtr
@@ -48,6 +49,14 @@ Public Class Utils
         mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0) : mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0)
     End Sub
 
+    Public Shared Function getNextRandom(min As Integer, max As Integer) As Integer
+        Return rnd.Next(min, max)
+    End Function
+
+    Public Shared Function ParseMinuteSecondString(s As String) As String()
+        If s Is Nothing Then Return Nothing
+        Return s.Split(",")
+    End Function
 
     Public Shared Function concatPaths(path1 As String, path2 As String)
         Return IO.Path.Combine({path1, path2})

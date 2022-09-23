@@ -53,7 +53,7 @@ Public Class PartsForm
             saveParts(Not autoSave)
         End If
         overlayMode -= Form1.eOverlayMode.PARTS
-        Form1.resetLoop()
+        PlayerInterface.resetLoop()
     End Sub
 
     Sub setState(toState As partState)
@@ -156,9 +156,8 @@ Public Class PartsForm
 
     Function saveParts(prompt As Boolean) As Boolean
         If Not prompt OrElse MsgBox("Parts have been modified." & vbNewLine & "Do you want to save changes?", MsgBoxStyle.YesNo, "Parts Manager") = MsgBoxResult.Yes Then
-            If playOnChange AndAlso Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                Form1.resetLoop()
-                'Form1.wmp.Ctlcontrols.pause()
+            If playOnChange AndAlso Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
+                PlayerInterface.resetLoop()
             End If
 1:          If state = partState.MODIFIED Then
                 If writePartsStream() Then
@@ -219,7 +218,7 @@ Public Class PartsForm
     Private Sub listParts_ItemActivate(sender As Object, e As EventArgs) Handles listParts.ItemActivate
         If listParts.SelectedIndices.Count > 0 AndAlso listParts.SelectedIndices(0) > -1 Then
             If Not radioEnabled Then
-                Form1.wmpstart(currTrack)
+                PlayerInterface.launchTrack(currTrack)
                 Form1.setLoop(currTrackPart.fromSec, currTrackPart.toSec)
             End If
         End If
@@ -243,13 +242,13 @@ Public Class PartsForm
             Dim secs As Integer = dll.minFormatToSec(tPartFrom.Text)
             currTrack.updateLength()
             If dll.minFormatToSec(tPartTo.Text) > secs And secs >= 0 And secs < currTrack.length Then
-                Form1.wmpstart(currTrack)
+                PlayerInterface.launchTrack(currTrack)
                 Form1.setLoop(secs, Math.Min(secs + 2, currTrack.length))
-                Form1.wmp.Ctlcontrols.currentPosition = secs
+                Player.setCurrentPosition(secs)
                 currTrack.currPart = currTrack.getCurrentPart()
             Else
-                Form1.resetLoop()
-                Form1.wmp.Ctlcontrols.pause()
+                PlayerInterface.resetLoop()
+                Player.pause()
             End If
         End If
     End Sub
@@ -259,13 +258,13 @@ Public Class PartsForm
             Dim secs As Integer = dll.minFormatToSec(tPartTo.Text)
             currTrack.updateLength()
             If dll.minFormatToSec(tPartFrom.Text) < secs And secs <= currTrack.length And secs > 0 Then
-                Form1.wmpstart(currTrack)
+                PlayerInterface.launchTrack(currTrack)
                 Form1.setLoop(Math.Max(0, secs - 2), secs)
-                Form1.wmp.Ctlcontrols.currentPosition = Math.Max(0, secs - 2)
+                Player.setCurrentPosition(Math.Max(0, secs - 2))
                 currTrack.currPart = currTrack.getCurrentPart()
             Else
-                Form1.resetLoop()
-                Form1.wmp.Ctlcontrols.pause()
+                PlayerInterface.resetLoop()
+                Player.pause()
             End If
         End If
     End Sub
@@ -370,9 +369,9 @@ Public Class PartsForm
         SettingsService.saveSetting(SettingsIdentifier.TRACK_PARTS_PLAY_ON_CHANGE, sender.checked)
     End Sub
     Private Sub checkPlayOnChange_Click(sender As Object, e As EventArgs) Handles checkPlayOnChange.Click
-        If Not playOnChange And Form1.wmp.URL.ToLower = currTrack.fullPath.ToLower And Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-            Form1.resetLoop()
-            Form1.wmp.Ctlcontrols.pause()
+        If Not playOnChange And Player.getUrl().ToLower = currTrack.fullPath.ToLower And Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
+            PlayerInterface.resetLoop()
+            Player.pause()
         End If
     End Sub
 End Class

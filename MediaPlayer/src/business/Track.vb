@@ -14,14 +14,13 @@ Public Class Track
 
     Shared ReadOnly Property currTrack As Track
         Get
-            Return formhandle.currTrack
+            Return PlayerInterface.currTrack
         End Get
     End Property
     Shared ReadOnly Property playlist As List(Of Track)
         Get
-            If formhandle Is Nothing Then Return Nothing
-            If formhandle.playlist Is Nothing Then Return Nothing
-            Return formhandle.playlist
+            If PlayerInterface.playlist Is Nothing Then Return Nothing
+            Return PlayerInterface.playlist
         End Get
     End Property
     Shared ReadOnly Property l2_2 As ListBox
@@ -31,12 +30,12 @@ Public Class Track
     End Property
     Shared ReadOnly Property gldt As List(Of String)
         Get
-            Return formhandle.gldt
+            Return PlayerInterface.gldt
         End Get
     End Property
     Shared ReadOnly Property glnames As List(Of String)
         Get
-            Return formhandle.glnames
+            Return PlayerInterface.glnames
         End Get
     End Property
 
@@ -130,7 +129,7 @@ Public Class Track
         length = loadRawSetting(SettingsIdentifier.TRACKS_TIME, name)
     End Sub
     Public Sub invalidateLength()
-        length = formhandle.wmp.newMedia(fullPath).duration
+        length = Player.newMedia(fullPath).duration
     End Sub
     Sub updateDate(Optional ByVal reload As Boolean = False)
         Dim dt As String = formhandle.getDate(name, reload)
@@ -260,7 +259,7 @@ Public Class Track
     End Function
 
     Function getCurrentPart(Optional ByVal timeint As Integer = -1) As TrackPart
-        If timeint = -1 Then timeint = Int(formhandle.wmp.Ctlcontrols.currentPosition)
+        If timeint = -1 Then timeint = Int(Player.getCurrentPosition())
         Dim curr As Integer = partsCount
         If parts.Count = 0 Then Return Nothing
         For i = parts.Count - 1 To 0 Step -1
@@ -295,7 +294,7 @@ Public Class Track
         Dim removedIndex As Integer = removeFromPlaylist(name)
         If index = -1 Then
             playlist.Add(Me)
-            playlistIndex = formhandle.playlist.Count - 1
+            playlistIndex = PlayerInterface.playlist.Count - 1
             insertToList()
         Else
             If removedIndex > -1 And index > removedIndex Then index -= 1
@@ -312,7 +311,7 @@ Public Class Track
     Public Sub playNext()
         If Not currTrack = Nothing Then
             currTrack.selectPlaylist()
-            addToPlaylist(formhandle.playlistContains(currTrack) + 1)
+            addToPlaylist(PlayerInterface.playlistContains(currTrack) + 1)
         Else
             playlist(0).selectPlaylist()
             addToPlaylist(1)
@@ -351,8 +350,8 @@ Public Class Track
     Public Sub play()
         selectPlaylist()
         l2_2.SelectedItem = Me
-        formhandle.wmpstart(Me)
-        formhandle.last = Me
+        PlayerInterface.launchTrack(Me)
+        PlayerInterface.last = Me
     End Sub
 
     Public Function removeFromPlaylist() As Integer
@@ -424,9 +423,9 @@ Public Class Track
             Form1.listRemove(formhandle.l2, Me)
             If fol = Folder.getSelectedFolder(Form1.tv) Then
                 fol.invalidateFolderTracks(False)
-                If formhandle.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                    If formhandle.currTrack.name = name Then
-                        formhandle.playNextTrack()
+                If Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
+                    If PlayerInterface.currTrack.name = name Then
+                        PlayerInterface.playNextTrack()
                         removeFromPlaylist()
                     End If
                 End If

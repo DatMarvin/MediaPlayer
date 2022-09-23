@@ -280,8 +280,8 @@ Public Class StatsForm
     Private Sub listTrackStats_ItemActivate(ByVal sender As Object, ByVal e As System.EventArgs) Handles listTrackStats.ItemActivate
         If Not IsNothing(tvSelection.SelectedNode) Then
             If Not radioEnabled Then
-                Form1.last = Track.getFirstTrack(listTrackStats.SelectedItems(0).Text)
-                Form1.wmpstart(Form1.last)
+                PlayerInterface.last = Track.getFirstTrack(listTrackStats.SelectedItems(0).Text)
+                PlayerInterface.launchTrack(PlayerInterface.last)
             End If
         End If
     End Sub

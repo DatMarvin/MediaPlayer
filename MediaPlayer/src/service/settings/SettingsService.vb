@@ -255,7 +255,7 @@ Public Module SettingsService
         settings.Add(SettingsIdentifier.WIN_MAX, New IniSetting(Of Boolean)(CONFIG_SECTION, "winMax", Boolean.FalseString))
         settings.Add(SettingsIdentifier.WIN_MINIMIZE_TO_ICON_TRAY, New IniSetting(Of Boolean)(CONFIG_SECTION, "winMinimizeToIconTry", Boolean.FalseString))
 
-        settings.Add(SettingsIdentifier.BALANCE, New IniSetting(Of Integer)(CONFIG_SECTION, "balance", 0))
+        settings.Add(SettingsIdentifier.BALANCE, New IniSetting(Of Integer)(CONFIG_SECTION, "balance", 0, AddressOf FollowupAction.changeBalance))
         settings.Add(SettingsIdentifier.PLAY_RATE, New IniSetting(Of Double)(CONFIG_SECTION, "playRate", 1.0))
 
         settings.Add(SettingsIdentifier.RANDOM_NEXT_TRACK, New IniSetting(Of Boolean)(CONFIG_SECTION, "randomNextTrack", Boolean.TrueString))
@@ -462,7 +462,12 @@ Public Module SettingsService
         End Function
 
         Shared Function changeVolume(value As String) As Boolean
-            Form1.wmp.settings.volume = value
+            Player.setVolume(value)
+            Return True
+        End Function
+
+        Shared Function changeBalance(value As String) As Boolean
+            Player.setBalance(value)
             Return True
         End Function
     End Class

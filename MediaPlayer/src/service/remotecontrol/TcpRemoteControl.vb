@@ -267,7 +267,7 @@ Public Class TcpRemoteControl
                         ElseIf comm.StartsWith("position_") Then
                             Dim m As Integer = comm.Substring(9, comm.LastIndexOf("_") - 9)
                             Dim s As Integer = comm.Substring(comm.LastIndexOf("_") + 1)
-                            Form1.wmp.Ctlcontrols.currentPosition = m * 60 + s
+                            Player.setCurrentPosition(m * 60 + s)
                         ElseIf comm.StartsWith("sysvol_") Then
                             Try
                                 Dim v As Integer = comm.Substring(7)
@@ -277,7 +277,7 @@ Public Class TcpRemoteControl
                         ElseIf comm.StartsWith("volume_") Then
                             Try
                                 Dim v As Integer = comm.Substring(7)
-                                Form1.wmp.settings.volume = v
+                                Player.setVolume(v)
                             Catch ex As Exception
                             End Try
                         ElseIf comm.StartsWith("monitor_") Then
@@ -385,12 +385,12 @@ Public Class TcpRemoteControl
                                 End If
                             ElseIf comm.StartsWith("reqlb") Then
                                 Dim sendS As String = ""
-                                If Form1.currTrack IsNot Nothing Then
-                                    Form1.currTrack.invalidateStats()
-                                    sendS &= Form1.currTrack.name & vbLf & Form1.currTrack.count & vbLf &
-                                                                 CInt(Form1.currTrack.length) & vbLf & Form1.currTrack.added.ToShortDateString
+                                If PlayerInterface.currTrack IsNot Nothing Then
+                                    PlayerInterface.currTrack.invalidateStats()
+                                    sendS &= PlayerInterface.currTrack.name & vbLf & PlayerInterface.currTrack.count & vbLf &
+                                                                 CInt(PlayerInterface.currTrack.length) & vbLf & PlayerInterface.currTrack.added.ToShortDateString
                                 Else
-                                    If radioEnabled And Form1.wmp.playState = WMPPlayState.wmppsPlaying Then
+                                    If radioEnabled And Player.getPlayState() = WMPPlayState.wmppsPlaying Then
                                         sendS &= Form1.l2.SelectedItem.name & vbLf & "0" & vbLf & "0" & vbLf & "0"
                                     Else
                                         sendS &= "" & vbLf & "0" & vbLf & "0" & vbLf & "0"

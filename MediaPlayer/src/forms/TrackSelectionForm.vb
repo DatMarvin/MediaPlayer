@@ -443,8 +443,8 @@ Public Class TrackSelectionForm
             Dim checked As List(Of Track) = getCheckedTracks()
             If checked Is Nothing Then Return
             Dim t As Track = checked(0)
-            If Form1.wmp.URL = t.fullPath And Form1.wmp.playState = WMPLib.WMPPlayState.wmppsPlaying Then
-                Form1.wmp.Ctlcontrols.pause()
+            If Player.getUrl() = t.fullPath And Player.getPlayState() = WMPLib.WMPPlayState.wmppsPlaying Then
+                Player.pause()
             Else
                 t.play()
             End If
@@ -664,7 +664,7 @@ Public Class TrackSelectionForm
 
     Private Sub checkPlayOnClick_CheckedChanged(sender As Object, e As EventArgs) Handles checkPlayOnClick.CheckedChanged
         SettingsService.saveSetting(SettingsIdentifier.TRACK_SELECTION_PLAY_ON_CLICK, sender.checked)
-        If Not playOnClick Then Form1.wmp.Ctlcontrols.pause()
+        If Not playOnClick Then Player.pause()
     End Sub
 
 

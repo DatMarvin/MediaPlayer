@@ -129,6 +129,8 @@
     <Compile Include="ApplicationEvents.vb" />
     <Compile Include="src\business\enums\PlayerEnums.vb" />
     <Compile Include="src\business\enums\SettingsEnums.vb" />
+    <Compile Include="src\player\Player.vb" />
+    <Compile Include="src\player\PlayerInterface.vb" />
     <Compile Include="src\service\gadgets\AutoStarts.vb" />
     <Compile Include="src\service\ExceptionService.vb" />
     <Compile Include="src\service\operatingsystem\FileSystemWatcher.vb" />
@@ -299,6 +301,7 @@
   <ItemGroup>
     <Content Include="mediaPlayer.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Import Project="..\packages\System.Text.Json.6.0.0\build\System.Text.Json.targets" Condition="Exists('..\packages\System.Text.Json.6.0.0\build\System.Text.Json.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
